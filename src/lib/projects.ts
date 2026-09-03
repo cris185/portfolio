@@ -24,9 +24,17 @@ export interface Project {
   hasProblem: boolean;
   hasStats?: boolean;
   demoAccounts?: { label: string; email: string; password: string }[];
-  /** Engineering Mode: deeper technical content pulled from the project's own README */
-  engineering?: {
+  /** Full documentation, transcribed verbatim from the project's own GitHub README */
+  docs?: {
     fullStack: { layer: string; tech: string }[];
+    architectureDiagram?: string;
+    schemaDiagrams?: { key: string; mermaid: string }[];
+    gettingStarted?: {
+      backendCommands: string;
+      backendEnv: string;
+      frontendCommands: string;
+      frontendEnv: string;
+    };
   };
 }
 
@@ -78,19 +86,274 @@ export const projects: Project[] = [
       { label: "Doctor", email: "elena.rodriguez@chohealth.test", password: "Demo1234!" },
       { label: "Patient", email: "patient@example.com", password: "Demo1234!" },
     ],
-    engineering: {
+    docs: {
       fullStack: [
-        { layer: "Backend", tech: "Django 6, Django REST Framework, SimpleJWT" },
-        { layer: "Database", tech: "PostgreSQL — self-hosted on my own VPS" },
-        { layer: "Media storage", tech: "MinIO (self-hosted, S3-compatible)" },
+        { layer: "Backend", tech: "Django 6, Django REST Framework, djangorestframework-simplejwt" },
+        { layer: "Database", tech: "PostgreSQL (production, via dj-database-url), SQLite (local fallback)" },
+        { layer: "Media storage", tech: "Cloudinary" },
+        { layer: "Static files", tech: "Whitenoise" },
         { layer: "Admin UI", tech: "Django Jazzmin" },
         { layer: "Payments", tech: "Stripe (Checkout, Setup Intents, webhooks), PayPal (Orders API)" },
         { layer: "Email", tech: "SendGrid" },
         { layer: "Frontend", tech: "Next.js 16 (App Router), React 19, TypeScript" },
-        { layer: "UI", tech: "shadcn/ui, Tailwind CSS v4, Framer Motion" },
-        { layer: "i18n", tech: "next-intl (English / Spanish)" },
-        { layer: "Deployment", tech: "Docker + Coolify, self-hosted VPS" },
+        { layer: "UI", tech: "shadcn/ui, @base-ui/react, Tailwind CSS v4, Framer Motion" },
+        { layer: "i18n", tech: "next-intl (English/Spanish)" },
       ],
+      architectureDiagram: `flowchart LR
+    subgraph client["Client"]
+        FE["Next.js 16 (App Router)<br/>React 19 + TypeScript"]
+    end
+
+    subgraph api["Django REST API"]
+        AUTH["userauths<br/>JWT authentication"]
+        DOC["doctor"]
+        PAT["patient"]
+        BASE["base<br/>scheduling / clinical core"]
+        BILL["billing"]
+    end
+
+    DB[("PostgreSQL (prod)<br/>SQLite (local)")]
+    MEDIA[("Cloudinary<br/>media storage")]
+    STRIPE[["Stripe"]]
+    PAYPAL[["PayPal"]]
+    SENDGRID[["SendGrid"]]
+
+    FE -->|"REST, JWT bearer token"| AUTH
+    FE --> DOC
+    FE --> PAT
+    FE --> BASE
+    FE --> BILL
+
+    AUTH --> DB
+    DOC --> DB
+    PAT --> DB
+    BASE --> DB
+    BILL --> DB
+
+    DOC --> MEDIA
+    PAT --> MEDIA
+    BASE --> MEDIA
+
+    BILL -->|"Checkout, Setup Intents, webhook"| STRIPE
+    BILL -->|"Orders API"| PAYPAL
+    AUTH -->|"Transactional email"| SENDGRID`,
+      schemaDiagrams: [
+        {
+          key: "identity",
+          mermaid: `erDiagram
+    USER ||--o| DOCTOR : "has profile"
+    USER ||--o| PATIENT : "has profile"
+    DOCTOR ||--o{ DOCTOR_QUALIFICATION : lists
+    DOCTOR ||--o{ DOCTOR_SCHEDULE : defines
+
+    USER {
+        string sid
+        string email UK
+        string user_type "Patient / Doctor / Superuser"
+        string otp
+    }
+    DOCTOR {
+        string sid
+        string specialization
+        int years_of_experience
+        decimal average_rating "denormalized, synced via signal"
+        int total_reviews
+    }
+    PATIENT {
+        string sid
+        date date_of_birth
+        string blood_group
+        string stripe_customer_id
+    }
+    DOCTOR_QUALIFICATION {
+        string degree
+        string institution
+        int year
+    }
+    DOCTOR_SCHEDULE {
+        int day_of_week
+        time start_time
+        time end_time
+        time break_start
+        time break_end
+    }`,
+        },
+        {
+          key: "clinical",
+          mermaid: `erDiagram
+    DOCTOR ||--o{ APPOINTMENT : attends
+    PATIENT ||--o{ APPOINTMENT : books
+    BRANCH ||--o{ APPOINTMENT : hosts
+    SERVICE ||--o{ APPOINTMENT : "billed as"
+    APPOINTMENT ||--o| MEDICAL_RECORD : produces
+    APPOINTMENT ||--o| REVIEW : "rated by"
+    MEDICAL_RECORD ||--o| PRESCRIPTION : issues
+    MEDICAL_RECORD ||--o{ LAB_ORDER : requests
+    PRESCRIPTION ||--o{ PRESCRIPTION_ITEM : contains
+    MEDICATION ||--o{ PRESCRIPTION_ITEM : "referenced by"
+    LAB_ORDER ||--o{ LAB_ORDER_ITEM : contains
+    LAB_TEST ||--o{ LAB_ORDER_ITEM : "referenced by"
+    LAB_ORDER_ITEM ||--o| LAB_RESULT : produces
+
+    APPOINTMENT {
+        string sid
+        datetime date
+        string status "Unpaid / Confirmed / In Progress / Completed / Cancelled / No Show"
+        string mode "In-Person / Virtual"
+        string cancelled_by
+        int reschedule_count
+    }
+    MEDICAL_RECORD {
+        string sid
+        text diagnosis
+        text treatment_plan
+    }
+    PRESCRIPTION_ITEM {
+        string medication_name
+        boolean is_system_medication
+        string dosage
+        string frequency
+        int duration_days
+        string delivery_method
+    }
+    LAB_ORDER {
+        string sid
+        string status
+        boolean is_prescribed
+    }
+    LAB_ORDER_ITEM {
+        boolean is_claimed
+    }
+    LAB_RESULT {
+        text result_text
+        file result_file
+    }
+    REVIEW {
+        int rating "1 to 5"
+        text comment
+    }`,
+        },
+        {
+          key: "pharmacy",
+          mermaid: `erDiagram
+    PATIENT ||--o{ MEDICINE_ORDER : places
+    BRANCH ||--o{ MEDICINE_ORDER : "picked up at"
+    MEDICINE_ORDER ||--o{ MEDICINE_ORDER_ITEM : contains
+    MEDICATION ||--o{ MEDICINE_ORDER_ITEM : "referenced by"
+    MEDICINE_ORDER ||--o| MEDICINE_DELIVERY : "tracked by"
+    PRESCRIPTION_ITEM ||--o| MEDICINE_ORDER_ITEM : fulfills
+
+    MEDICINE_ORDER {
+        string sid
+        string status
+        decimal subtotal
+        decimal shipping_fee
+        decimal total
+        string pickup_code UK "set only once Paid"
+    }
+    MEDICINE_ORDER_ITEM {
+        int quantity
+        decimal unit_price
+        decimal total
+    }
+    MEDICINE_DELIVERY {
+        string stage "picked_up ... delivered"
+        datetime started_at
+        datetime delivered_at
+    }`,
+        },
+        {
+          key: "billing",
+          mermaid: `erDiagram
+    PATIENT ||--o{ INVOICE : "billed to"
+    APPOINTMENT ||--o| INVOICE : "billed by (nullable)"
+    MEDICINE_ORDER ||--o| INVOICE : "billed by (nullable)"
+    INVOICE ||--o{ INVOICE_LINE_ITEM : contains
+    INVOICE ||--o{ PAYMENT : "paid via"
+    PAYMENT ||--o{ REFUND : "refunded by"
+    INVOICE ||--o{ BILLING_DISPUTE : disputed
+
+    INVOICE {
+        string sid
+        string invoice_number UK "INV-YYYYMMDD-NNNN"
+        decimal total
+        decimal amount_paid
+        decimal balance_due
+        string status
+    }
+    INVOICE_LINE_ITEM {
+        string description
+        int quantity
+        decimal unit_price
+        decimal total "price snapshot"
+    }
+    PAYMENT {
+        string sid
+        decimal amount
+        string payment_method "cash / card / bank_transfer / stripe / paypal"
+        string status
+        string gateway_charge_id
+        json gateway_response
+    }
+    REFUND {
+        decimal amount
+        string reason
+        string status
+    }
+    BILLING_DISPUTE {
+        decimal amount_disputed
+        string reason
+        string status
+    }`,
+        },
+      ],
+      gettingStarted: {
+        backendCommands: `cd backend\\CHOHEALT_BACK
+
+python -m venv venv
+.\\venv\\Scripts\\Activate.ps1
+
+pip install -r requirements.txt
+
+# create backend\\CHOHEALT_BACK\\.env — see variables below
+
+python manage.py migrate
+python manage.py createsuperuser   # optional, for /admin
+python manage.py runserver`,
+        backendEnv: `SECRET_KEY=
+DEBUG=True
+ALLOWED_HOSTS=
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+FRONTEND_URL=http://localhost:3000
+
+DATABASE_URL=                 # optional; falls back to local SQLite
+DATABASE_NAME=
+DATABASE_USER=
+DATABASE_PASSWORD=
+DATABASE_HOST=
+DATABASE_PORT=
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+PAYPAL_MODE=sandbox            # or "live"
+
+SENDGRID_API_KEY=
+DEFAULT_FROM_EMAIL=
+EMAIL_DOMAIN=`,
+        frontendCommands: `cd frontend
+npm install
+npm run dev`,
+        frontendEnv: `NEXT_PUBLIC_API_URL=http://localhost:8000/api
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
+      },
     },
   },
   {

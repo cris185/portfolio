@@ -45,18 +45,151 @@
         "Facturas, prescripciones y órdenes de laboratorio generadas como PDFs reales con ReportLab",
         "Códigos QR de recogida, correos transaccionales con SendGrid, y soporte completo en inglés/español"
       ],
-      "engineering": {
+      "docs": {
+        "problemLong": "Reservar con un doctor, surtir una prescripción y pagar por la atención suelen ser tres experiencias desconectadas para un paciente — una llamada para agendar, un papel para la farmacia, un portal aparte (o ninguno) para ver la factura. CHOHEALTH está construido para unificar ese flujo en un solo producto: el paciente reserva una cita, el doctor genera un historial clínico y una prescripción durante la consulta, el paciente la surte a través de una farmacia integrada con seguimiento de entrega, y cada uno de esos pasos genera una factura consistente y auditable — todo en una sola sesión autenticada, en el idioma del paciente. El objetivo de ingeniería detrás del proyecto no era construir otra demo CRUD, sino practicar las partes del software de salud que no perdonan atajos: prevenir que un doctor quede doble-reservado, mantener un libro contable que no pueda desviarse silenciosamente de la realidad, reconciliar dos pasarelas de pago distintas contra el mismo modelo de facturación, y hacer cumplir quién puede ver o hacer qué. Este es un proyecto de portafolio activo, no un producto terminado.",
         "decisions": [
-          { "title": "Los conflictos de reserva se previenen a nivel de base de datos, no solo en la lógica de la vista", "rationale": "Un constraint único condicional sobre (doctor, fecha) es la última línea de defensa contra una condición de carrera donde dos pacientes pagan por el mismo cupo con milisegundos de diferencia. Las validaciones a nivel de app dan un error rápido y amigable; el constraint es lo que realmente garantiza correctitud bajo concurrencia." },
+          { "title": "Django + DRF para la API", "rationale": "ORM maduro con constraints reales a nivel de base de datos (no solo validación de serializers), y un admin con todo incluido (Jazzmin) que cubre las herramientas internas/de staff sin construir una app de admin aparte." },
           { "title": "Un Invoice polimórfico usando dos campos one-to-one anulables más un CheckConstraint, en vez de una foreign key genérica", "rationale": "Mantiene integridad referencial y joins SQL normales en Invoice.appointment / Invoice.medicine_order, mientras que un check a nivel de base de datos hace estructuralmente imposible facturar ambos — o ninguno — desde la misma factura, incluso si una vista futura tiene un bug." },
-          { "title": "El rol se guarda en el usuario, pero nunca se confía en él solo para autorización", "rationale": "Permisos personalizados verifican el rol Y que el perfil relacionado realmente exista. Un usuario que reclama un rol sin un perfil correspondiente no está autorizado — cerrando un hueco que una verificación de rol ingenua dejaría abierto." },
-          { "title": "Rating del doctor desnormalizado, sincronizado vía signals", "rationale": "El listado/búsqueda de doctores es una ruta de lectura muy frecuente; recalcular un promedio en cada request no escala a medida que crecen las reseñas, así que un signal post_save/post_delete en Review recalcula y persiste el agregado en su lugar." },
-          { "title": "Un solo webhook de Stripe compartido para citas y pedidos de farmacia, enrutado por metadata", "rationale": "Evita duplicar la verificación de firma y el manejo de eventos para dos tipos de entidad facturable — el modelo de invoice/payment ya los trata de forma polimórfica, así que el webhook refleja eso." }
+          { "title": "Los conflictos de reserva se previenen a nivel de base de datos, no solo en la lógica de la vista", "rationale": "Un constraint único condicional sobre (doctor, fecha) es la última línea de defensa contra una condición de carrera donde dos pacientes pagan por el mismo cupo con milisegundos de diferencia. Las validaciones a nivel de app dan un error rápido y amigable; el constraint es lo que realmente garantiza correctitud bajo concurrencia." },
+          { "title": "Checkout hospedado (Stripe Checkout, redirección de PayPal) como vía de pago principal; Stripe Elements solo para tarjetas guardadas", "rationale": "El checkout hospedado mantiene el alcance de PCI-DSS del lado de la pasarela, no de la app. Elements se usa de forma acotada, solo para el flujo (guardar una tarjeta para después) donde una redirección hospedada daría peor UX." },
+          { "title": "Un solo webhook de Stripe compartido para citas y pedidos de farmacia, enrutado por metadata", "rationale": "Evita duplicar la verificación de firma y el manejo de eventos para dos tipos de entidad facturable — el modelo de invoice/payment ya los trata de forma polimórfica, así que el webhook refleja eso." },
+          { "title": "El rol se guarda en el usuario (user_type), pero nunca se confía en él solo para autorización", "rationale": "Permisos personalizados de DRF (IsDoctor, IsPatient) verifican el rol Y que el perfil relacionado realmente exista. Un usuario que reclama un rol sin un perfil correspondiente no está autorizado — cerrando un hueco que una verificación ingenua tipo request.user.user_type == 'Doctor' dejaría abierto." },
+          { "title": "Rating del doctor desnormalizado, sincronizado vía signals", "rationale": "El listado/búsqueda de doctores es una ruta de lectura muy frecuente; recalcular un promedio en cada request no escala a medida que crecen las reseñas. Un signal post_save/post_delete en Review recalcula y persiste el agregado en su lugar." },
+          { "title": "Selección de base de datos guiada por DATABASE_URL (PostgreSQL en producción vía dj-database-url, SQLite como fallback local)", "rationale": "Desarrollo local sin configuración y sin dependencias externas, base de datos de nivel producción en el despliegue sin tocar código." },
+          { "title": "Cloudinary como backend de medios", "rationale": "Delega el almacenamiento de archivos, la transformación y la entrega por CDN en vez de mantener un servidor de medios propio; se comporta igual en desarrollo local y en producción." },
+          { "title": "Un wrapper nativo de fetch (src/lib/api.ts) en vez de un cliente HTTP más pesado en el frontend", "rationale": "Un solo lugar para adjuntar el bearer token JWT, el header Accept-Language y el manejo de multipart — sin dependencia extra en runtime para lo que es una capa de API delgada y predecible." },
+          { "title": "Next.js App Router con dos árboles de rutas separados por rol (/dashboard/doctor, /dashboard/patient)", "rationale": "El ruteo por sistema de archivos mapea directamente a los dos recorridos de usuario tan distintos, y cada árbol de dashboard envía solo los componentes que su rol necesita." }
         ],
+        "businessRulesIntro": "Las siguientes reglas están implementadas en código (constraints de modelo, validadores clean(), o clases de permisos), no solo descritas en documentación — cada una corresponde a una salvaguarda específica en el código.",
+        "businessRules": [
+          {
+            "category": "Agenda",
+            "rules": [
+              "El estado clínico de una cita (Unpaid, Confirmed, In Progress, Completed, Cancelled, No Show) se rastrea de forma independiente a su estado de pago, que vive en el Invoice vinculado.",
+              "Un doctor no puede tener dos citas en un estado bloqueante (Confirmed, In Progress, Completed, No Show) en la misma fecha y hora — impuesto por un constraint único condicional a nivel de base de datos, así que los cupos Unpaid y Cancelled quedan libres para coexistir o reintentarse.",
+              "Las citas virtuales no pueden tener una sede asignada; las presenciales deben tenerla.",
+              "Las cancelaciones registran quién canceló (paciente, doctor, admin o sistema) y por qué; las reprogramaciones conservan la fecha/hora original e incrementan un contador.",
+              "Un paciente que cancela una cita pagada recibe un porcentaje de reembolso según el aviso dado: 100% con más de 48 horas de anticipación, 50% entre 24 y 48 horas, 0% dentro de las 24 horas. Una cancelación iniciada por el doctor siempre reembolsa el 100%, sin importar el aviso — el paciente nunca es penalizado por la decisión de un doctor.",
+              "La disponibilidad semanal de un doctor (DoctorSchedule) no tiene API de autoservicio — los bloques de horario se crean y editan exclusivamente desde el admin de Django. Un doctor puede leer su propio horario pero no cambiarlo desde su dashboard."
+            ]
+          },
+          {
+            "category": "Historiales clínicos y flujo de consulta",
+            "rules": [
+              "Se crea a lo sumo un historial clínico por cita, y es el ancla de cualquier prescripción u orden de laboratorio ligada a esa visita.",
+              "Una línea de prescripción puede apuntar a un medicamento del catálogo o ser texto libre — un doctor no está limitado a prescribir solo lo que está en el formulario del hospital.",
+              "Un doctor solo puede mover una cita a lo largo de un grafo de estados fijo: Confirmed → In Progress, Completed, Cancelled o No Show; In Progress → Completed o Cancelled. Cualquier otra transición es rechazada. Una cita virtual no puede pasar a In Progress sin antes tener un enlace de reunión configurado.",
+              "Cerrar una consulta es una sola acción atómica: crea el historial clínico y, en la misma solicitud, opcionalmente una prescripción y/o una orden de laboratorio juntas. No puede ejecutarse dos veces sobre la misma cita, y ninguno de esos tres registros puede editarse o eliminarse después vía la API — desde la perspectiva de la API, el historial clínico de un paciente es de solo anexado."
+            ]
+          },
+          {
+            "category": "Farmacia y cumplimiento de prescripciones",
+            "rules": [
+              "Los medicamentos y exámenes de laboratorio declaran, cada uno de forma independiente, dos flags: requires_prescription y free_when_prescribed. Si requires_prescription es False, un paciente puede comprar o reservar el ítem directamente, sin ningún doctor de por medio. Si es True, el endpoint de compra o reserva exige un ítem de prescripción sin reclamar para ese medicamento o examen exacto — emitido antes por un doctor a través de una cita completada — y devuelve 403 en caso contrario. No hay forma de obtener un ítem restringido por prescripción sin esa visita previa.",
+              "El precio de un ítem restringido por prescripción es $0 solo cuando está respaldado por un ítem de prescripción sin reclamar y la entrada del catálogo tiene free_when_prescribed = True (el valor por defecto); de lo contrario el paciente paga el precio completo del catálogo, exista o no una prescripción.",
+              "Un medicamento (o examen) prescrito puede reclamarse a lo sumo una vez entre todas las órdenes no canceladas — impuesto con un vínculo one-to-one entre la línea de la orden y el ítem de prescripción origen, así que la misma prescripción no puede despacharse dos veces por rutas paralelas de recogida/entrega.",
+              "El envío se cobra distinto según cuál de los dos flujos de farmacia use la orden: el carrito de farmacia (comprar medicamentos, prescritos o no, uno a la vez) siempre envía gratis — el precio por ítem ya lo contempla, así que reclamar un ítem prescrito a $0 por el carrito con entrega a domicilio no cuesta nada en absoluto, envío incluido. El flujo dedicado de \"solicitar entrega\" (que agrupa todo medicamento prescrito sin reclamar de una prescripción en una sola orden de entrega) siempre cobra una tarifa de envío fija encima, sin importar si los medicamentos agrupados cuestan $0 o el precio completo — es la única ruta del sistema donde se cobra envío.",
+              "El código de recogida de una orden de farmacia se genera una sola vez, justo en el momento en que pasa a Paid (pago en línea o cubierta completamente por una prescripción); permanece sin definir mientras el pago está pendiente, así que una orden sin pagar nunca puede recogerse en una sede."
+            ]
+          },
+          {
+            "category": "Reseñas",
+            "rules": [
+              "Una reseña solo puede enviarse para una cita con estado Completed, y solo por el paciente dueño de esa cita; ese mismo paciente puede editarla o eliminarla después, y existe una sola reseña por cita.",
+              "La visibilidad de las reseñas es pública, no limitada al autor: cualquier paciente puede navegar un feed con todas las reseñas de todos los doctores, y las reseñas de un doctor específico son legibles incluso por un visitante no autenticado. El catálogo de doctores que un paciente navega antes de reservar ya muestra el rating agregado y el número de reseñas de cada doctor — se espera que un paciente elija por reputación antes de siquiera ser atendido por ese doctor, no solo calificarlo después."
+            ]
+          },
+          {
+            "category": "Facturación",
+            "rules": [
+              "Cada factura factura exactamente una cita o una orden de farmacia — nunca ambas, nunca ninguna — impuesto con un check constraint de base de datos.",
+              "Los números de factura son secuenciales por día calendario (INV-YYYYMMDD-NNNN).",
+              "Las líneas de factura guardan una instantánea del precio al momento de facturar; cambios de precio posteriores al servicio o medicamento subyacente nunca alteran facturas históricas.",
+              "La suma de reembolsos completados contra un pago nunca puede exceder el monto original del pago.",
+              "Cada pago conserva la respuesta cruda de la pasarela junto a un estado normalizado, así que la reconciliación nunca requiere volver a soporte de Stripe o PayPal."
+            ]
+          },
+          {
+            "category": "Identidad y acceso",
+            "rules": [
+              "La autenticación es por email, no por username; los usernames se derivan automáticamente y se deduplican con un sufijo numérico.",
+              "El rol de un usuario (Patient / Doctor / Superuser) es necesario pero no suficiente para autorización — el acceso también requiere que exista el objeto de perfil correspondiente.",
+              "Los access tokens expiran a los 30 minutos; los refresh tokens a los 7 días, con rotación habilitada, así que un refresh token capturado solo puede usarse una vez antes de invalidarse."
+            ]
+          }
+        ],
+        "architectureNote": "Cada app de Django es dueña de sus propios modelos y vistas, pero comparten una sola base de datos PostgreSQL/SQLite; no hay límite de servicio entre ellas a nivel de datos, por diseño — es un monolito modular, no un sistema de microservicios, lo cual encaja con la escala real del proyecto y evita pagar un impuesto de sistemas distribuidos que no necesita.",
+        "schemaIntro": "El esquema está dividido en cuatro diagramas que reflejan las apps de Django, para mantener cada uno legible. Las llaves primarias son IDs cortos tipo UUID (sid) expuestos por la API; los IDs numéricos permanecen internos.",
+        "schemaDiagramTitles": {
+          "identity": "Identidad y equipo médico",
+          "clinical": "Agenda e historiales clínicos",
+          "pharmacy": "Farmacia y entregas",
+          "billing": "Facturación"
+        },
+        "schemaNote": "Invoice.appointment e Invoice.medicine_order son ambos campos one-to-one anulables; un CheckConstraint de base de datos exige que exactamente uno de los dos esté definido, algo que un diagrama entidad-relación no puede expresar directamente — está impuesto en billing/models.py, no solo en el código de la aplicación.",
+        "roles": [
+          {
+            "role": "Paciente",
+            "capabilities": [
+              { "label": "Cuenta", "text": "registrarse, iniciar sesión, editar perfil (datos de contacto, demografía, foto), dashboard personal de estadísticas (citas, historiales, resultados de laboratorio, notificaciones sin leer)." },
+              { "label": "Citas", "text": "navegar el catálogo público de servicios/doctores (visible incluso sin iniciar sesión), reservar presencial o virtual, pagar de inmediato o después, listar sus propias citas, reprogramar gratis contra el horario en vivo del doctor, cancelar con reembolso según el tiempo de aviso, o eliminarla directamente mientras siga sin pagar." },
+              { "label": "Historial clínico", "text": "acceso de solo lectura a sus propios historiales médicos, prescripciones y órdenes/resultados de laboratorio; descargar PDFs de prescripciones y órdenes de laboratorio bajo demanda." },
+              { "label": "Farmacia", "text": "navegar el catálogo público de medicamentos de venta libre, comprar medicamentos — de venta libre o prescritos — mediante un carrito que soporta recogida o entrega, o agrupar todo medicamento prescrito pendiente en una sola solicitud de entrega dedicada." },
+              { "label": "Exámenes de laboratorio", "text": "navegar el catálogo público de laboratorio (marcado con una insignia \"gratis para ti\" cuando existe una prescripción coincidente sin reclamar), reservar un examen directamente cuando no requiere prescripción, o gratis contra una que sí la exige." },
+              { "label": "Seguimiento de entregas", "text": "listar cada orden en modalidad de entrega y consultar un tracker en vivo por orden (ver Limitaciones conocidas para cómo está implementado ese \"en vivo\")." },
+              { "label": "Pagos", "text": "checkout con Stripe/PayPal, gestionar tarjetas guardadas, historial y totales de pagos personales." },
+              { "label": "Reseñas", "text": "calificar y comentar sobre cualquier doctor a partir de una cita completada (una por cita, editable), y por separado navegar un feed público con todas las reseñas de todos los doctores, o las de un doctor específico — no limitado a las propias." },
+              { "label": "Notificaciones", "text": "listar, filtrar por leídas/no leídas, marcar como leídas, eliminar." }
+            ]
+          },
+          {
+            "role": "Doctor",
+            "capabilities": [
+              { "label": "Perfil", "text": "editar su propio perfil y biografía; agregar o quitar calificaciones (título, institución, año, certificado)." },
+              { "label": "Disponibilidad", "text": "leer su propio horario semanal vía la API. Los bloques de horario en sí mismos solo se gestionan por ahora desde el admin de Django, no por autoservicio." },
+              { "label": "Agenda", "text": "listar y filtrar sus propias citas por fecha/mes; ver el detalle completo de una cita, incluyendo los datos de contacto y demográficos del paciente." },
+              { "label": "Flujo de consulta", "text": "llevar una cita a través de Confirmed → In Progress → Completed (o Cancelled/No Show); cerrar una consulta en una sola acción atómica que crea el historial clínico y, opcionalmente, una prescripción y/o una orden de laboratorio juntas." },
+              { "label": "Cancelar/reprogramar", "text": "cancelar una cita confirmada (siempre con reembolso completo al paciente) o reprogramarla contra su propio horario en vivo." },
+              { "label": "Pagos y estadísticas", "text": "pagos recibidos y estadísticas de ingresos propias; un dashboard que resume número de citas, número de pacientes, rating promedio, número de reseñas, ingresos y notificaciones sin leer." },
+              { "label": "Reseñas", "text": "leer sus propias reseñas vía el endpoint público por doctor; no puede responder, editar ni eliminar la reseña de un paciente." },
+              { "label": "Notificaciones", "text": "listar, filtrar, marcar como leídas, eliminar." }
+            ]
+          }
+        ],
+        "notifications": {
+          "intro": "Cada correo transaccional es \"fire-and-forget\" — un envío fallido queda registrado, nunca bloquea la solicitud — y comparten una sola plantilla de marca. Existen ocho disparadores distintos de punta a punta:",
+          "items": [
+            { "trigger": "Restablecer contraseña", "when": "Se solicita un restablecimiento", "attachment": "—" },
+            { "trigger": "Cita confirmada", "when": "El pago de una cita se completa con éxito", "attachment": "PDF de factura" },
+            { "trigger": "Cita cancelada", "when": "Cualquiera de las partes cancela", "attachment": "—" },
+            { "trigger": "Cita reprogramada", "when": "Cualquiera de las partes reprograma", "attachment": "—" },
+            { "trigger": "Visita virtual iniciada", "when": "El doctor marca una cita virtual como In Progress", "attachment": "Enlace de reunión" },
+            { "trigger": "Orden de farmacia lista para recoger", "when": "Se paga una orden con modalidad de recogida", "attachment": "Código QR de recogida, PDF de factura" },
+            { "trigger": "Orden de farmacia enviada", "when": "Se paga una orden con modalidad de entrega", "attachment": "PDF de factura, enlace de seguimiento" },
+            { "trigger": "Entrega completada", "when": "El propio seguimiento del paciente detecta la etapa final", "attachment": "—" }
+          ],
+          "note": "Actualmente no existe un correo de bienvenida al registrarse ni uno de \"resultados de laboratorio listos\" — ambos son adiciones naturales, aún no construidas."
+        },
         "limitations": [
-          "El tracking de entregas es simulado, no real — no hay integración con transportadora ni webhook. La etapa de cada pedido se calcula por tiempo transcurrido desde el pago, no por un evento del mundo real.",
-          "La disponibilidad semanal de un doctor solo se puede crear o editar desde el admin de Django — todavía no hay un endpoint de autoservicio para \"gestionar mi disponibilidad\"."
-        ]
+          "El seguimiento de entregas es simulado, no real. No hay integración con transportadora, webhook ni geolocalización en ninguna parte del código. MedicineDelivery.stage se calcula en cada consulta a partir del tiempo transcurrido desde que se pagó la orden — 5 etapas fijas, 30 segundos cada una, unos 2 minutos de punta a punta — no a partir de ningún evento real. El correo de \"entrega completada\" solo se envía la siguiente vez que el propio cliente del paciente consulta el endpoint de seguimiento después de alcanzar la etapa final; no hay un worker en segundo plano que garantice que se dispare si el paciente nunca vuelve a abrir esa pantalla. El siguiente paso real aquí sería un webhook de transportadora (o, como mínimo, una tarea programada en vez de polling disparado por el cliente) — construir eso de verdad, en vez de la simulación actual, está en el roadmap.",
+          "La disponibilidad del doctor todavía no tiene API de autoservicio. El horario semanal de un doctor (DoctorSchedule) por ahora solo puede crearse o editarse desde el admin de Django — no existe un endpoint de \"gestionar mi disponibilidad\" en el propio dashboard del doctor."
+        ],
+        "roadmap": [
+          "Chat seguro paciente-doctor vía Medplum — una plataforma de salud open-source, nativa en FHIR. Medplum se está adoptando de forma deliberada, no como una función genérica de chat: está construida alrededor de los estándares de cifrado, control de acceso e interoperabilidad que normalmente se esperan del intercambio de datos de salud, que es la misma vara con la que esta integración busca medir el proyecto, en vez de construir infraestructura de mensajería a la medida que tendría que reinventar esas garantías.",
+          "Capacidades adicionales basadas en Medplum (sincronización estructurada de recursos FHIR, intercambio de datos clínicos) a medida que la integración madure.",
+          "Una implementación real de seguimiento de entregas, reemplazando la simulación actual basada en tiempo — probablemente un webhook de transportadora (o, como mínimo, una tarea programada en segundo plano) que impulse MedicineDelivery.stage a partir de eventos reales en vez de tiempo transcurrido en cada lectura.",
+          "Un endpoint de gestión de horario para el doctor, para que la disponibilidad semanal ya no dependa del admin de Django."
+        ],
+        "gettingStarted": {
+          "prerequisites": [
+            "Python 3.13+ (el venv incluido usa 3.14)",
+            "Node.js 18.18+ (se recomienda 20+ para Next.js 16)",
+            "API keys de Stripe, PayPal, Cloudinary y SendGrid",
+            "PostgreSQL (opcional en local — si DATABASE_URL no está definida, cae a SQLite)"
+          ],
+          "backendNote": "La API queda disponible en http://127.0.0.1:8000/api/, el admin en http://127.0.0.1:8000/admin/.",
+          "closingNote": "El frontend queda disponible en http://localhost:3000. Corre backend y frontend en dos terminales — el frontend depende de la API para todo (autenticación, citas, pagos, etc.)."
+        }
       }
     },
     "choplanner": {
@@ -109,11 +242,38 @@
     "featuresTitle": "Qué hace",
     "demoAccount": "Cuenta demo",
     "demoNote": "Demo pública — siéntete libre de entrar y explorar.",
-    "engineeringMode": "Modo Ingeniería",
-    "engineeringModeOff": "Mostrar la ingeniería",
-    "keyDecisions": "Decisiones clave",
-    "knownLimitations": "Limitaciones conocidas",
-    "fullStackTitle": "Stack completo"
+    "docsToggleOn": "Documentación completa",
+    "docsToggleOff": "Leer la documentación completa",
+    "docsSub": "Transcrito directamente del README del proyecto — arquitectura, modelo de datos, reglas de negocio y cómo correrlo.",
+    "tabs": {
+      "decisions": "Decisiones",
+      "rules": "Reglas de negocio",
+      "architecture": "Arquitectura",
+      "schema": "Base de datos",
+      "roles": "Roles",
+      "limitations": "Limitaciones",
+      "stack": "Stack",
+      "roadmap": "Roadmap",
+      "setup": "Correrlo"
+    },
+    "keyDecisions": "Decisiones de arquitectura",
+    "knownLimitations": "Limitaciones conocidas y comportamiento simulado",
+    "fullStackTitle": "Stack completo",
+    "problemStatement": "Planteamiento del problema",
+    "businessRules": "Reglas de negocio",
+    "systemArchitecture": "Arquitectura del sistema",
+    "databaseSchema": "Esquema de base de datos",
+    "capabilitiesByRole": "Capacidades por rol",
+    "emailNotifications": "Notificaciones por correo",
+    "roadmapTitle": "Roadmap",
+    "gettingStartedTitle": "Cómo correrlo",
+    "prerequisites": "Prerrequisitos",
+    "backendSetup": "Backend",
+    "frontendSetup": "Frontend",
+    "envVars": "Variables de entorno",
+    "trigger": "Disparador",
+    "firedWhen": "Se dispara cuando",
+    "attachment": "Adjunto"
   },
   "professional": {
     "sectionLabel": "Experiencia Profesional",

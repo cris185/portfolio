@@ -45,18 +45,151 @@
         "Invoices, prescriptions and lab orders generated as real PDF documents with ReportLab",
         "QR pickup codes, SendGrid transactional email, and full English/Spanish support"
       ],
-      "engineering": {
+      "docs": {
+        "problemLong": "Booking a doctor, getting a prescription filled, and paying for care are usually three disconnected experiences for a patient — a phone call to schedule, a paper slip for the pharmacy, a separate portal (or none at all) to see the bill. CHOHEALTH is built to unify that flow into a single product: a patient books an appointment, the doctor produces a medical record and prescription during the visit, the patient fills it through an integrated pharmacy with delivery tracking, and every one of those steps generates a consistent, auditable invoice — all in one authenticated session, in the patient's own language. The engineering goal behind the project was not to build another CRUD demo, but to practice the parts of healthcare software that are unforgiving of shortcuts: preventing a double-booked doctor, keeping a financial ledger that cannot silently drift from reality, reconciling two different payment gateways against the same billing model, and enforcing who is allowed to see or do what. This is an active portfolio project, not a finished product.",
         "decisions": [
-          { "title": "Booking conflicts are prevented at the database layer, not just in view logic", "rationale": "A conditional unique constraint on (doctor, date) is the last line of defense against a race condition where two patients pay for the same slot within milliseconds of each other. App-level checks give a fast, friendly error; the constraint is what actually guarantees correctness under concurrency." },
-          { "title": "A polymorphic Invoice via two nullable one-to-one fields plus a CheckConstraint, instead of a generic foreign key", "rationale": "Keeps referential integrity and normal SQL joins on Invoice.appointment / Invoice.medicine_order, while a database-level XOR check makes it structurally impossible to bill both — or neither — from the same invoice, even if a future view has a bug." },
-          { "title": "Role is stored on the user, but never trusted alone for authorization", "rationale": "Custom permissions check the role and that the related profile object actually exists. A user who claims a role without a matching profile is not authorized — closing a gap a naive role check would leave open." },
-          { "title": "Denormalized doctor rating, kept in sync via signals", "rationale": "The doctor list/search is a hot read path; recomputing an average on every request doesn't scale as reviews grow, so a post_save/post_delete signal on Review recalculates and persists the aggregate instead." },
-          { "title": "One shared Stripe webhook for both appointments and pharmacy orders, routed by metadata", "rationale": "Avoids duplicating signature verification and event handling for two billable entity types — the invoice/payment model already treats them polymorphically, so the webhook mirrors that." }
+          { "title": "Django + DRF for the API", "rationale": "Mature ORM with real database-level constraints (not just serializer validation), and a batteries-included admin (Jazzmin) that covers internal/staff tooling without building a separate admin app." },
+          { "title": "Polymorphic Invoice via two nullable one-to-one fields + a CheckConstraint, instead of a generic foreign key", "rationale": "Keeps referential integrity and normal SQL joins on Invoice.appointment / Invoice.medicine_order, while a database-level XOR check makes it structurally impossible to bill both — or neither — target from the same invoice, even if a future view has a bug." },
+          { "title": "Booking conflict prevention enforced at the database layer, not only in view logic", "rationale": "A conditional unique constraint on (doctor, date) is the last line of defense against a race condition where two patients pay for the same slot within milliseconds of each other. Application-level checks run first for a fast, friendly error; the constraint is what actually guarantees correctness under concurrency." },
+          { "title": "Hosted checkout (Stripe Checkout, PayPal redirect) as the primary payment path; Stripe Elements only for saved cards", "rationale": "Hosted checkout keeps PCI-DSS scope on the gateway's side instead of the app's. Elements is used narrowly, for the one flow (saving a card for later) where a hosted redirect would be worse UX." },
+          { "title": "One shared Stripe webhook for both appointments and pharmacy orders, routed by metadata", "rationale": "Avoids duplicating webhook signature verification and event handling for two billable entity types; the invoice/payment model already treats them polymorphically, so the webhook mirrors that." },
+          { "title": "Role stored on the user (user_type) but never trusted alone for authorization", "rationale": "Custom DRF permissions (IsDoctor, IsPatient) check the role and that the related profile object actually exists. A user who claims a role without a matching profile is not authorized — closing a gap that a naive request.user.user_type == 'Doctor' check would leave open." },
+          { "title": "Denormalized doctor rating, kept in sync via signals", "rationale": "The doctor list/search is a hot read path; recomputing an average on every request does not scale as reviews grow. A post_save/post_delete signal on Review recalculates and persists the aggregate instead." },
+          { "title": "DATABASE_URL-driven database selection (PostgreSQL in production via dj-database-url, SQLite fallback locally)", "rationale": "Zero-configuration local development with no external dependency, production-grade database in deployment without touching code." },
+          { "title": "Cloudinary as the media backend", "rationale": "Offloads file storage, transformation and CDN delivery instead of managing a media server; behaves identically in local development and production." },
+          { "title": "Native fetch wrapper (src/lib/api.ts) instead of a heavier HTTP client on the frontend", "rationale": "One place to attach the JWT bearer token, the Accept-Language header, and multipart handling — no extra runtime dependency for what is a thin, predictable API layer." },
+          { "title": "Next.js App Router with two role-scoped route trees (/dashboard/doctor, /dashboard/patient)", "rationale": "File-system routing maps directly onto the two very different user journeys, and each dashboard tree ships only the components its role needs." }
         ],
+        "businessRulesIntro": "The rules below are enforced in code (model constraints, clean() validators, or permission classes), not just described in documentation — each one maps to a specific safeguard in the codebase.",
+        "businessRules": [
+          {
+            "category": "Scheduling",
+            "rules": [
+              "An appointment's clinical status (Unpaid, Confirmed, In Progress, Completed, Cancelled, No Show) is tracked independently from its payment status, which lives on the linked Invoice.",
+              "A doctor cannot hold two appointments in a blocking status (Confirmed, In Progress, Completed, No Show) at the same date and time — enforced by a conditional unique constraint at the database level, so Unpaid and Cancelled slots are free to coexist or be retried.",
+              "Virtual appointments cannot have a branch assigned; in-person appointments must have one.",
+              "Cancellations record who cancelled (patient, doctor, admin, or system) and why; reschedules preserve the original datetime and increment a counter.",
+              "A patient cancelling a paid appointment gets a refund percentage set by how much notice they gave: 100% more than 48 hours out, 50% between 24 and 48 hours, 0% inside 24 hours. A doctor-initiated cancellation always refunds 100%, regardless of notice — the patient is never penalized for a doctor's decision.",
+              "A doctor's weekly availability (DoctorSchedule) has no self-service API — schedule blocks are created and edited exclusively through the Django admin. A doctor can read their own schedule but not change it from their dashboard."
+            ]
+          },
+          {
+            "category": "Clinical records and consultation workflow",
+            "rules": [
+              "A medical record is created at most once per appointment and is the anchor for any prescription or lab order tied to that visit.",
+              "A prescription line can point to a catalog medication or be free text — a doctor is not blocked from prescribing something outside the hospital's own formulary.",
+              "A doctor can only move an appointment along a fixed status graph: Confirmed → In Progress, Completed, Cancelled or No Show; In Progress → Completed or Cancelled. Any other transition is rejected. A virtual appointment cannot move to In Progress without a meeting link set first.",
+              "Closing a consultation is a single atomic action: it creates the medical record and, in the same request, an optional prescription and/or lab order together. It cannot be run twice on the same appointment, and none of those three records can be edited or deleted afterward through the API — from the API's perspective, a patient's clinical history is append-only."
+            ]
+          },
+          {
+            "category": "Pharmacy and prescription fulfillment",
+            "rules": [
+              "Medications and lab tests each declare, independently, two flags: requires_prescription and free_when_prescribed. If requires_prescription is False, a patient can buy or book the item directly, with no doctor involved. If it's True, the purchase or booking endpoint requires an unclaimed prescription item for that exact medication or lab test — issued earlier by a doctor through a completed appointment — and returns 403 otherwise. There is no way to acquire a prescription-gated item without that prior visit.",
+              "Pricing for a prescription-gated item is $0 only when it is backed by an unclaimed prescription item and the catalog entry has free_when_prescribed = True (the default); otherwise the patient pays the full catalog price, whether or not a prescription exists.",
+              "A prescribed medication (or lab test) can be claimed at most once across all non-cancelled orders — enforced with a one-to-one link between the order line and the source prescription item, so the same prescription can't be dispensed twice through parallel pickup/delivery paths.",
+              "Shipping is priced differently depending on which of two distinct pharmacy flows the order goes through: the pharmacy cart (buying medications, prescribed or not, one at a time) always ships free — the per-item price already accounts for it, so claiming a $0 prescribed item through the cart with delivery selected costs nothing at all, shipping included. The dedicated \"request delivery\" flow (bundling every unclaimed prescribed medication from one prescription into a single delivery order) always charges a flat shipping fee on top, regardless of whether the bundled medications price at $0 or full cost — the only path in the system where shipping is charged.",
+              "A pharmacy order's pickup code is generated once, only at the moment it becomes Paid (online payment or fully covered by a prescription); it stays unset while payment is pending, so an unpaid order can never be collected at a branch."
+            ]
+          },
+          {
+            "category": "Reviews",
+            "rules": [
+              "A review can only be submitted for an appointment with status Completed, and only by the patient who owns that appointment; that same patient can later edit or delete it, and only one review exists per appointment.",
+              "Review visibility is public, not limited to the author: any patient can browse a feed of every review across every doctor, and a specific doctor's individual reviews are readable even by an unauthenticated visitor. The doctor catalog a patient browses before booking already surfaces each doctor's aggregate rating and review count — a patient is expected to shop by reputation before ever being seen by that doctor, not just rate one afterward."
+            ]
+          },
+          {
+            "category": "Billing",
+            "rules": [
+              "Every invoice bills exactly one of an appointment or a pharmacy order — never both, never neither — enforced with a database check constraint.",
+              "Invoice numbers are sequential per calendar day (INV-YYYYMMDD-NNNN).",
+              "Line items store a price snapshot at billing time; later price changes to the underlying service or medication never alter historical invoices.",
+              "The sum of completed refunds against a payment can never exceed the original payment amount.",
+              "Every payment retains the gateway's raw response alongside a normalized status, so reconciliation never requires going back to Stripe or PayPal support."
+            ]
+          },
+          {
+            "category": "Identity and access",
+            "rules": [
+              "Authentication is by email, not username; usernames are derived automatically and de-duplicated with a numeric suffix.",
+              "A user's role (Patient / Doctor / Superuser) is necessary but not sufficient for authorization — access also requires the matching profile object to exist.",
+              "Access tokens expire after 30 minutes; refresh tokens after 7 days, with rotation enabled so a captured refresh token can be used only once before it is invalidated."
+            ]
+          }
+        ],
+        "architectureNote": "Each Django app owns its own models and views but shares one PostgreSQL/SQLite database; there is no service boundary between them at the data layer, by design — this is a modular monolith, not a microservice system, which matches the project's actual scale and avoids paying a distributed-systems tax it does not need.",
+        "schemaIntro": "The schema is split across four diagrams that mirror the Django apps, to keep each one legible. Primary keys are UUID-like short IDs (sid) exposed to the API; numeric IDs stay internal.",
+        "schemaDiagramTitles": {
+          "identity": "Identity and care team",
+          "clinical": "Scheduling and clinical records",
+          "pharmacy": "Pharmacy and delivery",
+          "billing": "Billing"
+        },
+        "schemaNote": "Invoice.appointment and Invoice.medicine_order are both nullable one-to-one fields; a database CheckConstraint requires exactly one of them to be set, which an entity-relationship diagram cannot express directly — it is enforced in billing/models.py, not only in application code.",
+        "roles": [
+          {
+            "role": "Patient",
+            "capabilities": [
+              { "label": "Account", "text": "register, log in, edit profile (contact info, demographics, photo), personal stats dashboard (appointments, records, lab results, unread notifications)." },
+              { "label": "Appointments", "text": "browse the public service/doctor catalog (visible even logged out), book in-person or virtual, pay immediately or later, list own appointments, reschedule for free against the doctor's live schedule, cancel with a time-based refund, or delete outright while still unpaid." },
+              { "label": "Clinical history", "text": "read-only access to own medical records, prescriptions, and lab orders/results; download prescription and lab-order PDFs on demand." },
+              { "label": "Pharmacy", "text": "browse the over-the-counter medication catalog (public), buy medications — over-the-counter or prescribed — through a cart supporting pickup or delivery, or bundle every pending prescribed medication into one dedicated delivery request." },
+              { "label": "Lab tests", "text": "browse the public lab catalog (flagged with a \"free for you\" badge when an unclaimed matching prescription exists), book a lab directly when it doesn't require a prescription, or for free against one that does." },
+              { "label": "Delivery tracking", "text": "list every delivery-mode order and poll a live per-order tracker (see Known limitations for how \"live\" is implemented)." },
+              { "label": "Payments", "text": "Stripe/PayPal checkout, manage saved cards, personal payment history and totals." },
+              { "label": "Reviews", "text": "rate and comment on any doctor from a completed appointment (one per appointment, editable), and separately browse a public feed of every review across every doctor, or one doctor's reviews specifically — not limited to the patient's own submissions." },
+              { "label": "Notifications", "text": "list, filter by read/unread, mark as read, delete." }
+            ]
+          },
+          {
+            "role": "Doctor",
+            "capabilities": [
+              { "label": "Profile", "text": "edit own profile and bio; add or remove qualifications (degree, institution, year, certificate)." },
+              { "label": "Availability", "text": "read own weekly schedule via the API. Schedule blocks themselves are currently managed only through the Django admin, not self-service." },
+              { "label": "Agenda", "text": "list and filter own appointments by date/month; view full appointment detail, including the patient's contact and demographic info." },
+              { "label": "Consultation workflow", "text": "drive an appointment through Confirmed → In Progress → Completed (or Cancelled/No Show); close a consultation in one atomic action that creates the medical record and, optionally, a prescription and/or lab order together." },
+              { "label": "Cancel/reschedule", "text": "cancel a confirmed appointment (always a full refund to the patient) or reschedule it against their own live schedule." },
+              { "label": "Payments and stats", "text": "own received payments and revenue stats; a dashboard summarizing appointment counts, patient counts, average rating, review count, revenue, and unread notifications." },
+              { "label": "Reviews", "text": "read own reviews via the public per-doctor endpoint; cannot respond to, edit, or delete a patient's review." },
+              { "label": "Notifications", "text": "list, filter, mark as read, delete." }
+            ]
+          }
+        ],
+        "notifications": {
+          "intro": "Every transactional email is fire-and-forget — a failed send is logged, never blocks the request — and shares one branded template. Eight distinct triggers exist end to end:",
+          "items": [
+            { "trigger": "Password reset", "when": "A reset is requested", "attachment": "—" },
+            { "trigger": "Appointment confirmed", "when": "Payment for an appointment succeeds", "attachment": "Invoice PDF" },
+            { "trigger": "Appointment cancelled", "when": "Either party cancels", "attachment": "—" },
+            { "trigger": "Appointment rescheduled", "when": "Either party reschedules", "attachment": "—" },
+            { "trigger": "Virtual visit started", "when": "Doctor marks a virtual appointment In Progress", "attachment": "Meeting link" },
+            { "trigger": "Pharmacy order ready for pickup", "when": "A pickup-method order is paid", "attachment": "QR pickup code, invoice PDF" },
+            { "trigger": "Pharmacy order shipped", "when": "A delivery-method order is paid", "attachment": "Invoice PDF, tracking link" },
+            { "trigger": "Delivery completed", "when": "The patient's own tracking poll detects the final stage", "attachment": "—" }
+          ],
+          "note": "There is currently no welcome email on signup and no \"lab results ready\" email — both are natural additions, not yet built."
+        },
         "limitations": [
-          "Delivery tracking is simulated, not real — there's no courier integration or webhook. Each order's stage is computed from elapsed time since payment, not from a real-world event.",
-          "A doctor's weekly availability can currently only be created or edited through the Django admin — there's no self-service \"manage my availability\" endpoint yet."
-        ]
+          "Delivery tracking is simulated, not real. There is no courier integration, webhook, or geolocation anywhere in the codebase. MedicineDelivery.stage is computed on every poll from elapsed time since the order was paid — 5 fixed stages, 30 seconds each, about 2 minutes end to end — not from any real-world event. The \"delivery completed\" email is only sent the next time the patient's own client polls the tracking endpoint after the final stage is reached; there is no background worker guaranteeing it fires if the patient never reopens that screen. The next real step here would be a courier webhook (or at minimum a scheduled task instead of client-triggered polling) — genuinely building that out, rather than the current simulation, is on the roadmap.",
+          "Doctor availability has no self-service API yet. A doctor's weekly schedule (DoctorSchedule) can currently only be created or edited through the Django admin — there is no \"manage my availability\" endpoint on the doctor's own dashboard."
+        ],
+        "roadmap": [
+          "Secure patient-doctor chat via Medplum — an open-source, FHIR-native healthcare platform. Medplum is being adopted deliberately, not as a generic chat feature: it is built around the encryption, access-control and interoperability standards that healthcare data exchange is generally expected to meet, which is the same bar this integration is meant to hold the project to, rather than building bespoke messaging infrastructure that would need to reinvent those guarantees.",
+          "Additional Medplum-backed capabilities (structured FHIR resource sync, clinical data exchange) as the integration matures.",
+          "A real delivery-tracking implementation, replacing the current time-based simulation — likely a courier webhook (or, at minimum, a scheduled background task) driving MedicineDelivery.stage off real events instead of elapsed time on read.",
+          "A doctor-facing schedule management endpoint, so weekly availability no longer requires the Django admin."
+        ],
+        "gettingStarted": {
+          "prerequisites": [
+            "Python 3.13+ (the bundled venv uses 3.14)",
+            "Node.js 18.18+ (20+ recommended for Next.js 16)",
+            "API keys for Stripe, PayPal, Cloudinary and SendGrid",
+            "PostgreSQL (optional locally — falls back to SQLite if DATABASE_URL is unset)"
+          ],
+          "backendNote": "API available at http://127.0.0.1:8000/api/, admin at http://127.0.0.1:8000/admin/.",
+          "closingNote": "Frontend available at http://localhost:3000. Run backend and frontend in two terminals — the frontend depends on the API for everything (authentication, appointments, payments, and so on)."
+        }
       }
     },
     "choplanner": {
@@ -109,11 +242,38 @@
     "featuresTitle": "What it does",
     "demoAccount": "Demo account",
     "demoNote": "Public demo — feel free to log in and click around.",
-    "engineeringMode": "Engineering Mode",
-    "engineeringModeOff": "Show me the engineering",
-    "keyDecisions": "Key decisions",
-    "knownLimitations": "Known limitations",
-    "fullStackTitle": "Full stack"
+    "docsToggleOn": "Full documentation",
+    "docsToggleOff": "Read the full documentation",
+    "docsSub": "Transcribed from the project's own README — architecture, data model, business rules and how to run it.",
+    "tabs": {
+      "decisions": "Decisions",
+      "rules": "Business rules",
+      "architecture": "Architecture",
+      "schema": "Database",
+      "roles": "Roles",
+      "limitations": "Limitations",
+      "stack": "Tech stack",
+      "roadmap": "Roadmap",
+      "setup": "Run it"
+    },
+    "keyDecisions": "Architectural decisions",
+    "knownLimitations": "Known limitations & simulated behavior",
+    "fullStackTitle": "Full stack",
+    "problemStatement": "Problem statement",
+    "businessRules": "Business rules",
+    "systemArchitecture": "System architecture",
+    "databaseSchema": "Database schema",
+    "capabilitiesByRole": "Capabilities by role",
+    "emailNotifications": "Email notifications",
+    "roadmapTitle": "Roadmap",
+    "gettingStartedTitle": "Getting started",
+    "prerequisites": "Prerequisites",
+    "backendSetup": "Backend",
+    "frontendSetup": "Frontend",
+    "envVars": "Environment variables",
+    "trigger": "Trigger",
+    "firedWhen": "Fired when",
+    "attachment": "Attachment"
   },
   "professional": {
     "sectionLabel": "Professional Builds",

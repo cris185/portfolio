@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { getProject, projects, type ProjectId } from "@/lib/projects";
 import BackLink from "@/components/BackLink";
 import ProjectGallery from "@/components/ProjectGallery";
-import EngineeringMode from "@/components/EngineeringMode";
+import ProjectDocs from "@/components/ProjectDocs";
 import { GithubIcon } from "@/components/icons";
 
 export function generateStaticParams() {
@@ -209,15 +209,16 @@ export default async function ProjectDetailPage({
           </ul>
         </div>
 
-        {project.engineering && (
-          <EngineeringMode
+        {project.docs && (
+          <ProjectDocs
             projectId={project.id}
-            engineering={project.engineering}
+            docs={project.docs}
             accentText={project.accentText}
             textPrimary={project.textPrimary}
             textSecondary={project.textSecondary}
             pillBorder={project.pillBorder}
             pillBg={project.pillBg}
+            isDark={isDark}
           />
         )}
 
