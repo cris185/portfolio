@@ -635,15 +635,15 @@
     },
     "verifylead": {
       "name": "Verify Lead",
-      "tagline": "Lead qualification for a 40+ person sales team",
+      "tagline": "Lead verification & outbound email for a 40+ person sales team",
       "role": "Role — Backend Developer",
-      "description": "Lead qualification platform used by a 40+ person sales team — API, data pipeline and verification logic. Screenshots and a live link are on the way, pending sign-off."
+      "description": "A subscription-based lead-verification and outbound email platform used by a 40+ person sales team — deliverability checks before a lead enters a campaign, credit-based usage limits and access control, and scheduled sends with delivery metrics. RESTful APIs across a decoupled frontend/backend architecture. Screenshots and a live link are on the way, pending sign-off."
     },
     "dashboardanalytics": {
       "name": "Dashboard Analytics",
       "tagline": "Scheduling, staff and reporting for a wellness business",
       "role": "Role — Full Stack Developer",
-      "description": "Management system for a spa/wellness business — scheduling, staff and reporting in one dashboard."
+      "description": "A dashboard-driven management system for a spa/wellness business — appointment scheduling, staff management, and day-to-day operational reporting in one place. Full-stack development across the platform, from the API layer to the UI."
     }
   }
 }

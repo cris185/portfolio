@@ -635,15 +635,15 @@
     },
     "verifylead": {
       "name": "Verify Lead",
-      "tagline": "Calificación de leads para un equipo de ventas de 40+ personas",
+      "tagline": "Verificación de leads y correo saliente para un equipo de 40+ personas",
       "role": "Rol — Backend Developer",
-      "description": "Plataforma de calificación de leads usada por un equipo de ventas de más de 40 personas — API, pipeline de datos y lógica de verificación. Capturas y un link en vivo vienen en camino, pendiente de aprobación."
+      "description": "Una plataforma de verificación de leads y correo saliente, basada en suscripción, usada por un equipo de ventas de más de 40 personas — validación de entregabilidad antes de que un lead entre a una campaña, límites de uso por créditos y control de acceso, y envíos programados con métricas de entrega. APIs REST sobre una arquitectura frontend/backend desacoplada. Capturas y un link en vivo vienen en camino, pendiente de aprobación."
     },
     "dashboardanalytics": {
       "name": "Dashboard Analytics",
       "tagline": "Agenda, personal y reportes para un negocio de bienestar",
       "role": "Rol — Full Stack Developer",
-      "description": "Sistema de gestión para un negocio de spa/bienestar — agenda, personal y reportes en un solo dashboard."
+      "description": "Un sistema de gestión basado en dashboards para un negocio de spa/bienestar — agenda de citas, gestión de personal, y reportes operativos del día a día en un solo lugar. Desarrollo full-stack en toda la plataforma, desde la capa de API hasta la UI."
     }
   }
 }
