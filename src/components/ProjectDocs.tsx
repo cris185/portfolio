@@ -8,6 +8,8 @@ import {
   Lightbulb,
   Scale,
   GitBranch,
+  Brain,
+  Code2,
   Database,
   Users,
   AlertTriangle,
@@ -18,13 +20,27 @@ import {
 import type { ProjectId, Project } from "@/lib/projects";
 import MermaidDiagram from "./MermaidDiagram";
 
-type TabKey = "overview" | "decisions" | "rules" | "architecture" | "schema" | "roles" | "limitations" | "stack" | "roadmap" | "setup";
+type TabKey =
+  | "overview"
+  | "decisions"
+  | "rules"
+  | "architecture"
+  | "model"
+  | "api"
+  | "schema"
+  | "roles"
+  | "limitations"
+  | "stack"
+  | "roadmap"
+  | "setup";
 
 const TAB_ICONS: Record<TabKey, typeof FileText> = {
   overview: FileText,
   decisions: Lightbulb,
   rules: Scale,
   architecture: GitBranch,
+  model: Brain,
+  api: Code2,
   schema: Database,
   roles: Users,
   limitations: AlertTriangle,
@@ -33,7 +49,20 @@ const TAB_ICONS: Record<TabKey, typeof FileText> = {
   setup: Terminal,
 };
 
-const TAB_ORDER: TabKey[] = ["overview", "decisions", "rules", "architecture", "schema", "roles", "limitations", "stack", "roadmap", "setup"];
+const TAB_ORDER: TabKey[] = [
+  "overview",
+  "decisions",
+  "rules",
+  "architecture",
+  "model",
+  "api",
+  "schema",
+  "roles",
+  "limitations",
+  "stack",
+  "roadmap",
+  "setup",
+];
 
 function SectionLabel({ children, color }: { children: React.ReactNode; color: string }) {
   return (
@@ -93,6 +122,11 @@ export default function ProjectDocs({
   const limitations = (tp.raw("docs.limitations") ?? []) as string[];
   const roadmap = (tp.raw("docs.roadmap") ?? []) as string[];
   const schemaDiagramTitles = (tp.raw("docs.schemaDiagramTitles") ?? {}) as Record<string, string>;
+  const modelSpecs = (tp.raw("docs.model.specs") ?? []) as { param: string; value: string }[];
+  const apiReference = (tp.raw("docs.apiReference") ?? []) as {
+    group: string;
+    rows: { method: string; path: string; description: string }[];
+  }[];
   const gettingStarted = (tp.raw("docs.gettingStarted") ?? { prerequisites: [] }) as {
     prerequisites: string[];
     backendNote: string;
@@ -103,7 +137,9 @@ export default function ProjectDocs({
     if (key === "overview") return true;
     if (key === "decisions") return decisions.length > 0;
     if (key === "rules") return businessRules.length > 0;
-    if (key === "architecture") return !!docs.architectureDiagram;
+    if (key === "architecture") return !!docs.architectureDiagram || !!docs.architectureText;
+    if (key === "model") return !!docs.modelDiagramText || modelSpecs.length > 0;
+    if (key === "api") return apiReference.length > 0;
     if (key === "schema") return !!docs.schemaDiagrams?.length;
     if (key === "roles") return roles.length > 0;
     if (key === "limitations") return limitations.length > 0;
@@ -159,7 +195,7 @@ export default function ProjectDocs({
           {/* overview */}
           {tab === "overview" && (
             <div>
-              <SectionLabel color={accentText}>{t("problemStatement")}</SectionLabel>
+              <SectionLabel color={accentText}>{t("overviewTitle")}</SectionLabel>
               <p className="max-w-2xl text-[14px] leading-relaxed" style={{ color: textPrimary }}>
                 {tp("docs.problemLong")}
               </p>
@@ -217,15 +253,127 @@ export default function ProjectDocs({
           )}
 
           {/* architecture */}
-          {tab === "architecture" && docs.architectureDiagram && (
+          {tab === "architecture" && (docs.architectureDiagram || docs.architectureText) && (
             <div>
               <SectionLabel color={accentText}>{t("systemArchitecture")}</SectionLabel>
-              <div className="rounded-lg p-5" style={{ border: `1px solid ${pillBorder}`, background: isDark ? "#00000020" : "#ffffff" }}>
-                <MermaidDiagram chart={docs.architectureDiagram} dark={isDark} />
+              {docs.architectureDiagram && (
+                <div className="rounded-lg p-5" style={{ border: `1px solid ${pillBorder}`, background: isDark ? "#00000020" : "#ffffff" }}>
+                  <MermaidDiagram chart={docs.architectureDiagram} dark={isDark} />
+                </div>
+              )}
+              {docs.architectureText && <CodeBlock code={docs.architectureText} isDark={isDark} pillBorder={pillBorder} />}
+              {docs.architectureDiagram && (
+                <p className="mt-4 max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
+                  {tp("docs.architectureNote")}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ML model */}
+          {tab === "model" && (docs.modelDiagramText || modelSpecs.length > 0) && (
+            <div>
+              <SectionLabel color={accentText}>{t("modelArchitecture")}</SectionLabel>
+              {docs.modelDiagramText && <CodeBlock code={docs.modelDiagramText} isDark={isDark} pillBorder={pillBorder} />}
+
+              {modelSpecs.length > 0 && (
+                <div className="mt-8">
+                  <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                    {t("modelSpecs")}
+                  </div>
+                  <div className="flex flex-col overflow-hidden rounded-lg" style={{ border: `1px solid ${pillBorder}` }}>
+                    {modelSpecs.map((row, i) => (
+                      <div
+                        key={row.param}
+                        className="flex gap-4 px-4 py-2.5 text-[12.5px]"
+                        style={{ borderTop: i === 0 ? "none" : `1px solid ${pillBorder}` }}
+                      >
+                        <div className="w-44 shrink-0 font-mono" style={{ color: accentText }}>
+                          {row.param}
+                        </div>
+                        <div style={{ color: textSecondary }}>{row.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {docs.modelCodeSnippet && (
+                <div className="mt-8">
+                  <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                    {t("dataLeakagePrevention")}
+                  </div>
+                  <p className="mb-3 max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
+                    {tp("docs.model.dataLeakageIntro")}
+                  </p>
+                  <CodeBlock code={docs.modelCodeSnippet} isDark={isDark} pillBorder={pillBorder} />
+                </div>
+              )}
+
+              <div className="mt-8">
+                <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                  {t("uncertaintyQuantification")}
+                </div>
+                <p className="max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
+                  {tp("docs.model.uncertaintyNote")}
+                </p>
               </div>
-              <p className="mt-4 max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
-                {tp("docs.architectureNote")}
-              </p>
+            </div>
+          )}
+
+          {/* API reference */}
+          {tab === "api" && apiReference.length > 0 && (
+            <div>
+              <SectionLabel color={accentText}>{t("apiReferenceTitle")}</SectionLabel>
+              <div className="flex flex-col gap-7">
+                {apiReference.map((group) => (
+                  <div key={group.group}>
+                    <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                      {group.group}
+                    </div>
+                    <div className="overflow-x-auto rounded-lg" style={{ border: `1px solid ${pillBorder}` }}>
+                      <table className="w-full min-w-[480px] border-collapse text-[12px]">
+                        <tbody>
+                          {group.rows.map((row, i) => (
+                            <tr key={row.path} style={{ borderTop: i === 0 ? "none" : `1px solid ${pillBorder}` }}>
+                              <td className="whitespace-nowrap px-3 py-2 font-mono" style={{ color: accentText }}>
+                                {row.method}
+                              </td>
+                              <td className="whitespace-nowrap px-3 py-2 font-mono" style={{ color: textPrimary }}>
+                                {row.path}
+                              </td>
+                              <td className="px-3 py-2" style={{ color: textSecondary }}>
+                                {row.description}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {(docs.apiExampleRequest || docs.apiExampleResponse) && (
+                <div className="mt-8 grid gap-6 sm:grid-cols-2">
+                  {docs.apiExampleRequest && (
+                    <div>
+                      <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                        {t("requestExample")}
+                      </div>
+                      <CodeBlock code={docs.apiExampleRequest} isDark={isDark} pillBorder={pillBorder} />
+                    </div>
+                  )}
+                  {docs.apiExampleResponse && (
+                    <div>
+                      <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                        {t("responseExample")}
+                      </div>
+                      <CodeBlock code={docs.apiExampleResponse} isDark={isDark} pillBorder={pillBorder} />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

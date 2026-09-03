@@ -234,7 +234,68 @@
         "Strict separation between train and test scalers to prevent data leakage — a mistake most tutorials skip",
         "Backtesting dashboard with MSE, RMSE and R² computed against real historical prices",
         "JWT auth with automatic token refresh, and a singleton-cached model for fast concurrent predictions"
-      ]
+      ],
+      "docs": {
+        "problemLong": "NeuroStock is a full-stack web app that predicts stock market prices with a Machine Learning model: an LSTM (Long Short-Term Memory) neural network trained on historical data pulled from Yahoo Finance. Every prediction runs through two stages — backtesting, where the model is evaluated against real historical data it never trained on, and a future forecast with confidence intervals, not a single naked number. The project deliberately practices the parts of ML engineering that are easy to fake and easy to get wrong: preventing data leakage between training and test data, quantifying how uncertain a forecast actually is instead of presenting it as fact, and keeping a trained model fast to serve under concurrent requests. This is an educational project — predictions do not constitute financial advice, and stock trading carries real risk of capital loss.",
+        "decisions": [
+          { "title": "Strict train/test scaler separation to prevent data leakage", "rationale": "The MinMaxScaler is fit only on the training split; test data is transformed with that same training-fitted scaler, never refit on its own. Letting the scaler see test-set statistics during training is a subtle mistake most tutorials skip, and it silently inflates backtest accuracy." },
+          { "title": "Monte Carlo Dropout instead of a single point prediction", "rationale": "Running 50 stochastic forward passes with dropout active turns one forecast into a real confidence interval, with a growing uncertainty factor (+2% per day) that reflects how compounding error actually behaves over a longer horizon — instead of presenting a 200-day forecast with the same false confidence as a 1-day one." },
+          { "title": "Every prediction runs a backtest before it runs a forecast", "rationale": "Before showing a future prediction, the model is evaluated against real historical data it was not trained on (70/30 split), and MSE, RMSE and R² are computed and shown alongside the forecast — accountability instead of a black-box number." },
+          { "title": "Recursive multi-day forecasting from a fixed 100-day-lookback architecture", "rationale": "The model only knows how to predict one step ahead from a 100-day window; predicting up to 365 days out means feeding each prediction back in as if it were real data for the next step. This is what makes long-horizon forecasts possible from a single fixed architecture, and it's exactly why uncertainty has to grow with each step instead of staying constant." },
+          { "title": "The trained LSTM model is cached as a thread-safe singleton", "rationale": "Deserializing a Keras model from disk on every request would make concurrent predictions slow and wasteful; ml_manager.py loads it once and holds it in memory, safe for concurrent access." },
+          { "title": "JWT authentication with refresh token rotation", "rationale": "A 15-minute access token limits the exposure window of a leaked token, while a 7-day rotating refresh token keeps the user logged in without asking them to re-authenticate constantly — rotation means a captured refresh token can't be replayed indefinitely." }
+        ],
+        "model": {
+          "specs": [
+            { "param": "Input sequence", "value": "100 days" },
+            { "param": "LSTM layers", "value": "2 (128 + 64 units)" },
+            { "param": "Activation function", "value": "tanh" },
+            { "param": "Optimizer", "value": "Adam" },
+            { "param": "Loss function", "value": "Mean Squared Error" },
+            { "param": "Training epochs", "value": "50" },
+            { "param": "Normalization", "value": "MinMaxScaler (0, 1)" }
+          ],
+          "dataLeakageIntro": "The system implements strict separation between training and testing data:",
+          "uncertaintyNote": "Monte Carlo Dropout is used to estimate prediction uncertainty: 50 Monte Carlo iterations per prediction, a growing uncertainty factor (+2% per day), and configurable confidence intervals (80%, 95%, 99%)."
+        },
+        "apiReference": [
+          {
+            "group": "Authentication",
+            "rows": [
+              { "method": "POST", "path": "/api/v1/register/", "description": "User registration" },
+              { "method": "POST", "path": "/api/v1/token/", "description": "Get JWT tokens" },
+              { "method": "POST", "path": "/api/v1/token/refresh/", "description": "Renew access token" },
+              { "method": "GET", "path": "/api/v1/protected-view/", "description": "Verify authentication" }
+            ]
+          },
+          {
+            "group": "Predictions",
+            "rows": [
+              { "method": "POST", "path": "/api/v1/predict/", "description": "Run a prediction (backtest + future forecast) for a ticker" }
+            ]
+          }
+        ],
+        "limitations": [
+          "One static, pre-trained model is shared by every ticker — stock_prediction_model.keras is not retrained per stock, so accuracy varies with how closely a given ticker's price behavior resembles what the model was trained on.",
+          "Longer forecasts are recursive, not independently modeled — each predicted day is fed back in as input for the next, so error compounds the further out the forecast goes, which is exactly why the confidence interval widens with the horizon instead of staying fixed.",
+          "Predictions are educational, not financial advice — the model has no awareness of news, earnings, macroeconomic events or anything outside historical price patterns, and stock trading carries real risk of capital loss."
+        ],
+        "roadmap": [
+          "Support for multiple model architectures (GRU, Transformer)",
+          "Multiple-stock comparison",
+          "News sentiment analysis",
+          "Prediction alerts via email",
+          "Portfolio tracker",
+          "Dark/light mode",
+          "PWA (installable, offline-capable)",
+          "Docker deployment"
+        ],
+        "gettingStarted": {
+          "prerequisites": ["Python 3.12+", "Node.js 18+", "npm or yarn"],
+          "backendNote": "Backend API available at http://127.0.0.1:8000/api/v1/.",
+          "closingNote": "Frontend available at http://localhost:5173. Enter a ticker (e.g. AAPL, TSLA) on the dashboard to see backtesting and a future forecast with confidence intervals."
+        }
+      }
     },
     "sevenlever": {
       "name": "Seven Lever",
@@ -273,6 +334,8 @@
       "decisions": "Decisions",
       "rules": "Business rules",
       "architecture": "Architecture",
+      "model": "ML model",
+      "api": "API",
       "schema": "Database",
       "roles": "Roles",
       "limitations": "Limitations",
@@ -280,6 +343,14 @@
       "roadmap": "Roadmap",
       "setup": "Run it"
     },
+    "overviewTitle": "Overview",
+    "modelArchitecture": "Model architecture",
+    "modelSpecs": "Model specifications",
+    "dataLeakagePrevention": "Data leakage prevention",
+    "uncertaintyQuantification": "Uncertainty quantification",
+    "apiReferenceTitle": "API reference",
+    "requestExample": "Example request",
+    "responseExample": "Example response",
     "keyDecisions": "Architectural decisions",
     "knownLimitations": "Known limitations & simulated behavior",
     "fullStackTitle": "Full stack",

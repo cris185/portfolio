@@ -234,7 +234,68 @@
         "Separación estricta entre los scalers de entrenamiento y prueba para prevenir data leakage — un error que la mayoría de tutoriales se salta",
         "Dashboard de backtesting con MSE, RMSE y R² calculados contra precios históricos reales",
         "Autenticación JWT con refresh automático, y un modelo cacheado como singleton para predicciones concurrentes rápidas"
-      ]
+      ],
+      "docs": {
+        "problemLong": "NeuroStock es una aplicación web full-stack que predice precios de acciones con un modelo de Machine Learning: una red neuronal LSTM (Long Short-Term Memory) entrenada con datos históricos obtenidos de Yahoo Finance. Cada predicción pasa por dos etapas — backtesting, donde el modelo se evalúa contra datos históricos reales que nunca vio en entrenamiento, y un pronóstico futuro con intervalos de confianza, no un número suelto sin contexto. El proyecto practica deliberadamente las partes de la ingeniería de ML que son fáciles de simular y fáciles de hacer mal: prevenir data leakage entre datos de entrenamiento y de prueba, cuantificar qué tan incierto es realmente un pronóstico en vez de presentarlo como un hecho, y mantener un modelo entrenado rápido de servir bajo peticiones concurrentes. Este es un proyecto educativo — las predicciones no constituyen asesoramiento financiero, y el trading de acciones conlleva un riesgo real de pérdida de capital.",
+        "decisions": [
+          { "title": "Separación estricta entre los scalers de entrenamiento y prueba para prevenir data leakage", "rationale": "El MinMaxScaler se ajusta solo con el split de entrenamiento; los datos de prueba se transforman con ese mismo scaler ya ajustado, nunca se reajusta con sus propios datos. Dejar que el scaler vea las estadísticas del conjunto de prueba durante el entrenamiento es un error sutil que la mayoría de tutoriales se salta, y infla silenciosamente la precisión del backtest." },
+          { "title": "Monte Carlo Dropout en vez de una predicción puntual única", "rationale": "Correr 50 pasadas estocásticas hacia adelante con el dropout activo convierte un solo pronóstico en un intervalo de confianza real, con un factor de incertidumbre creciente (+2% por día) que refleja cómo se comporta realmente el error acumulado en un horizonte más largo — en vez de presentar un pronóstico a 200 días con la misma falsa confianza que uno a 1 día." },
+          { "title": "Cada predicción corre un backtest antes de correr un pronóstico", "rationale": "Antes de mostrar una predicción futura, el modelo se evalúa contra datos históricos reales con los que no fue entrenado (split 70/30), y se calculan y muestran MSE, RMSE y R² junto al pronóstico — accountability en vez de un número de caja negra." },
+          { "title": "Pronóstico recursivo a varios días desde una arquitectura de ventana fija de 100 días", "rationale": "El modelo solo sabe predecir un paso adelante a partir de una ventana de 100 días; predecir hasta 365 días implica retroalimentar cada predicción como si fuera un dato real para el siguiente paso. Esto es lo que hace posibles los pronósticos a largo horizonte desde una sola arquitectura fija, y es exactamente por eso que la incertidumbre debe crecer en cada paso en vez de mantenerse constante." },
+          { "title": "El modelo LSTM entrenado se cachea como un singleton thread-safe", "rationale": "Deserializar un modelo de Keras desde disco en cada request haría las predicciones concurrentes lentas y costosas; ml_manager.py lo carga una sola vez y lo mantiene en memoria, seguro para acceso concurrente." },
+          { "title": "Autenticación JWT con rotación de refresh tokens", "rationale": "Un access token de 15 minutos limita la ventana de exposición de un token filtrado, mientras que un refresh token rotativo de 7 días mantiene al usuario con sesión iniciada sin pedirle reautenticarse constantemente — la rotación implica que un refresh token capturado no puede reutilizarse indefinidamente." }
+        ],
+        "model": {
+          "specs": [
+            { "param": "Secuencia de entrada", "value": "100 días" },
+            { "param": "Capas LSTM", "value": "2 (128 + 64 unidades)" },
+            { "param": "Función de activación", "value": "tanh" },
+            { "param": "Optimizador", "value": "Adam" },
+            { "param": "Función de pérdida", "value": "Mean Squared Error" },
+            { "param": "Épocas de entrenamiento", "value": "50" },
+            { "param": "Normalización", "value": "MinMaxScaler (0, 1)" }
+          ],
+          "dataLeakageIntro": "El sistema implementa una separación estricta entre datos de entrenamiento y prueba:",
+          "uncertaintyNote": "Se usa Monte Carlo Dropout para estimar la incertidumbre de la predicción: 50 iteraciones de Monte Carlo por predicción, un factor de incertidumbre creciente (+2% por día), e intervalos de confianza configurables (80%, 95%, 99%)."
+        },
+        "apiReference": [
+          {
+            "group": "Autenticación",
+            "rows": [
+              { "method": "POST", "path": "/api/v1/register/", "description": "Registro de usuario" },
+              { "method": "POST", "path": "/api/v1/token/", "description": "Obtener tokens JWT" },
+              { "method": "POST", "path": "/api/v1/token/refresh/", "description": "Renovar el access token" },
+              { "method": "GET", "path": "/api/v1/protected-view/", "description": "Verificar autenticación" }
+            ]
+          },
+          {
+            "group": "Predicciones",
+            "rows": [
+              { "method": "POST", "path": "/api/v1/predict/", "description": "Correr una predicción (backtest + pronóstico futuro) para un ticker" }
+            ]
+          }
+        ],
+        "limitations": [
+          "Un único modelo estático y pre-entrenado se comparte entre todos los tickers — stock_prediction_model.keras no se reentrena por acción, así que la precisión varía según qué tanto se parezca el comportamiento de precio de un ticker dado a lo que el modelo aprendió.",
+          "Los pronósticos más largos son recursivos, no modelados de forma independiente — cada día predicho se retroalimenta como entrada del siguiente, así que el error se acumula mientras más lejos llega el pronóstico, que es exactamente por qué el intervalo de confianza se ensancha con el horizonte en vez de mantenerse fijo.",
+          "Las predicciones son educativas, no asesoramiento financiero — el modelo no tiene ninguna noción de noticias, resultados financieros, eventos macroeconómicos ni nada fuera de los patrones históricos de precio, y el trading de acciones conlleva un riesgo real de pérdida de capital."
+        ],
+        "roadmap": [
+          "Soporte para múltiples arquitecturas de modelo (GRU, Transformer)",
+          "Comparación de múltiples acciones",
+          "Análisis de sentimiento de noticias",
+          "Alertas de predicción por correo",
+          "Portfolio tracker",
+          "Modo oscuro/claro",
+          "PWA (instalable, con soporte offline)",
+          "Despliegue en Docker"
+        ],
+        "gettingStarted": {
+          "prerequisites": ["Python 3.12+", "Node.js 18+", "npm o yarn"],
+          "backendNote": "La API del backend queda disponible en http://127.0.0.1:8000/api/v1/.",
+          "closingNote": "El frontend queda disponible en http://localhost:5173. Ingresa un ticker (ej. AAPL, TSLA) en el dashboard para ver el backtesting y un pronóstico futuro con intervalos de confianza."
+        }
+      }
     },
     "sevenlever": {
       "name": "Seven Lever",
@@ -273,6 +334,8 @@
       "decisions": "Decisiones",
       "rules": "Reglas de negocio",
       "architecture": "Arquitectura",
+      "model": "Modelo ML",
+      "api": "API",
       "schema": "Base de datos",
       "roles": "Roles",
       "limitations": "Limitaciones",
@@ -280,6 +343,14 @@
       "roadmap": "Roadmap",
       "setup": "Correrlo"
     },
+    "overviewTitle": "Resumen",
+    "modelArchitecture": "Arquitectura del modelo",
+    "modelSpecs": "Especificaciones del modelo",
+    "dataLeakagePrevention": "Prevención de data leakage",
+    "uncertaintyQuantification": "Cuantificación de incertidumbre",
+    "apiReferenceTitle": "Referencia de la API",
+    "requestExample": "Ejemplo de request",
+    "responseExample": "Ejemplo de response",
     "keyDecisions": "Decisiones de arquitectura",
     "knownLimitations": "Limitaciones conocidas y comportamiento simulado",
     "fullStackTitle": "Stack completo",

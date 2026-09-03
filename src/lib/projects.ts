@@ -34,7 +34,15 @@ export interface Project {
   docs?: {
     fullStack: { layer: string; tech: string }[];
     architectureDiagram?: string;
+    /** Plain-text/ASCII diagram (folder tree, box diagram), for projects without a mermaid source */
+    architectureText?: string;
     schemaDiagrams?: { key: string; mermaid: string }[];
+    /** ASCII diagram of an ML model's layer stack */
+    modelDiagramText?: string;
+    /** A representative code snippet (e.g. a data-leakage-prevention pattern), shown verbatim */
+    modelCodeSnippet?: string;
+    apiExampleRequest?: string;
+    apiExampleResponse?: string;
     gettingStarted?: {
       backendCommands: string;
       backendEnv: string;
@@ -410,6 +418,143 @@ NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
     pillBorder: "#00d4ff2e",
     techStack: ["Django REST", "TensorFlow / Keras", "LSTM", "React", "Chart.js"],
     hasProblem: false,
+    demoAccounts: {
+      accounts: [{ label: "Demo", email: "demo@neurostock.dev", password: "Demo1234!" }],
+    },
+    docs: {
+      fullStack: [
+        { layer: "Python", tech: "3.12 — main language" },
+        { layer: "Django", tech: "5.2 — web framework" },
+        { layer: "Django REST Framework", tech: "3.16 — REST API" },
+        { layer: "TensorFlow / Keras", tech: "3.10 — LSTM model" },
+        { layer: "yfinance", tech: "market data source" },
+        { layer: "scikit-learn", tech: "preprocessing (MinMaxScaler)" },
+        { layer: "NumPy / Pandas", tech: "data manipulation" },
+        { layer: "SimpleJWT", tech: "5.5 — JWT authentication" },
+        { layer: "React", tech: "19.0 — UI framework" },
+        { layer: "Vite", tech: "build tool" },
+        { layer: "Chart.js", tech: "4.5 — charts" },
+        { layer: "Axios", tech: "1.9 — HTTP client" },
+        { layer: "Tailwind CSS", tech: "styling" },
+        { layer: "Radix UI", tech: "components" },
+        { layer: "React Router", tech: "7.5 — navigation" },
+        { layer: "React Hook Form", tech: "7.56 — forms" },
+      ],
+      architectureText: `NeuroStock/
+├── backend-drf/                 # Django REST Framework backend
+│   ├── api/                     # Main predictions app
+│   │   ├── views.py             # Prediction endpoints
+│   │   ├── data_pipeline.py     # Data download and preparation
+│   │   ├── prediction_engine.py # Future predictions engine
+│   │   ├── ml_manager.py        # Singleton for model management
+│   │   ├── serializers.py       # Request validation
+│   │   └── urls.py              # API routes
+│   ├── accounts/                # Authentication app
+│   │   ├── views.py             # Registration and login
+│   │   └── serializers.py       # User serialization
+│   ├── stock_prediction_main/   # Django configuration
+│   │   └── settings.py          # Project settings
+│   └── stock_prediction_model.keras  # Trained LSTM model
+│
+├── frontend-react/              # React + Vite frontend
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── dashboard/       # Predictions panel
+│   │   │   ├── Charts/          # Chart.js charts
+│   │   │   ├── Login/           # Login component
+│   │   │   ├── Register/        # Registration component
+│   │   │   ├── Layout/          # Header and Footer
+│   │   │   ├── Hooks/           # AuthProvider
+│   │   │   └── ui/              # Reusable UI components
+│   │   ├── App.jsx              # Main routes
+│   │   └── axiosInstance.js     # HTTP configuration
+│   └── package.json
+│
+├── docs/                        # Documentation (es/ and en/)
+├── Resources_tf/                # Development notebooks
+│   └── stock_prediction_using_LSTM.ipynb
+└── env/                         # Python virtual environment`,
+      modelDiagramText: `┌─────────────────────────────────────────┐
+│            Input Layer                   │
+│         (100 timesteps, 1 feature)       │
+├─────────────────────────────────────────┤
+│          LSTM Layer 1                    │
+│    (128 units, tanh, return_sequences)   │
+├─────────────────────────────────────────┤
+│          LSTM Layer 2                    │
+│          (64 units, tanh)                │
+├─────────────────────────────────────────┤
+│          Dense Layer                     │
+│            (25 units)                    │
+├─────────────────────────────────────────┤
+│          Output Layer                    │
+│            (1 unit)                      │
+└─────────────────────────────────────────┘`,
+      modelCodeSnippet: `# CORRECT: scaler fitted ONLY on training data
+train_scaler = MinMaxScaler(feature_range=(0, 1))
+train_scaler.fit(data_split['train'].values.reshape(-1, 1))
+
+# Transform test data with the training scaler
+test_scaled = train_scaler.transform(test_data)`,
+      apiExampleRequest: `{
+    "ticker": "AAPL",
+    "future_days": 30,
+    "confidence_level": 0.95
+}`,
+      apiExampleResponse: `{
+    "status": "success",
+    "ticker": "AAPL",
+    "historical_data": {
+        "dates": ["2015-01-02", "..."],
+        "close_prices": [27.33, "..."]
+    },
+    "ma_data": {
+        "ma100": [0, "...", 28.5],
+        "ma200": [0, "...", 29.1]
+    },
+    "backtesting": {
+        "test_dates": ["2023-01-03", "..."],
+        "test_prices": [125.07, "..."],
+        "predicted_prices": [124.89, "..."],
+        "metrics": { "mse": 12.45, "rmse": 3.53, "r2": 0.9876 }
+    },
+    "future_predictions": {
+        "dates": ["2026-02-25", "..."],
+        "predicted_prices": [185.23, "..."],
+        "lower_bound": [180.12, "..."],
+        "upper_bound": [190.34, "..."],
+        "uncertainty": [2.54, "..."],
+        "confidence_level": 0.95
+    }
+}`,
+      gettingStarted: {
+        backendCommands: `python -m venv env
+
+# Windows
+.\\env\\Scripts\\Activate.ps1
+# Linux/Mac
+source env/bin/activate
+
+cd backend-drf
+pip install -r requirements.txt
+
+# create backend-drf/.env — see variables below
+
+python manage.py migrate
+python manage.py createsuperuser   # optional, for /admin
+python manage.py runserver`,
+        backendEnv: `SECRET_KEY=your-secret-key-here
+DEBUG=False
+ALLOWED_HOSTS=localhost,127.0.0.1`,
+        frontendCommands: `cd frontend-react
+npm install
+
+# create frontend-react/.env — see variables below
+
+npm run dev`,
+        frontendEnv: `VITE_BACKEND_BASE_API=http://127.0.0.1:8000/api/v1`,
+      },
+    },
   },
 ];
 
