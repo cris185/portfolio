@@ -286,7 +286,62 @@ export default async function ProjectDetailPage({
               </div>
             )}
 
-            <p className="mt-4 text-xs" style={{ color: project.textSecondary }}>
+            {project.demoAccounts.stripeDocsUrl && (
+              <div className="mt-8">
+                <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-[12px] font-semibold" style={{ color: project.textPrimary }}>
+                    {t("testPayments")}
+                  </div>
+                  <a
+                    href={project.demoAccounts.stripeDocsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 font-mono text-[11px]"
+                    style={{ color: project.accentText }}
+                  >
+                    {t("stripeDocsLink")}
+                    <ArrowUpRight size={12} />
+                  </a>
+                </div>
+                <div className="overflow-x-auto rounded-lg" style={{ border: `1px solid ${project.pillBorder}` }}>
+                  <table className="w-full min-w-[420px] border-collapse text-[12px]">
+                    <thead>
+                      <tr style={{ borderBottom: `1px solid ${project.pillBorder}` }}>
+                        <th
+                          className="px-3 py-2 text-left font-mono text-[10.5px] uppercase tracking-[0.06em]"
+                          style={{ color: project.accentText }}
+                        >
+                          {t("stripeCardNumber")}
+                        </th>
+                        <th
+                          className="px-3 py-2 text-left font-mono text-[10.5px] uppercase tracking-[0.06em]"
+                          style={{ color: project.accentText }}
+                        >
+                          {t("stripeCardResult")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(tp.raw("demoStripeCards") as { number: string; result: string }[]).map((card, i) => (
+                        <tr key={card.number} style={{ borderTop: i === 0 ? "none" : `1px solid ${project.pillBorder}` }}>
+                          <td className="whitespace-nowrap px-3 py-2 font-mono" style={{ color: project.textPrimary }}>
+                            {card.number}
+                          </td>
+                          <td className="px-3 py-2" style={{ color: project.textSecondary }}>
+                            {card.result}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-2.5 text-[11px]" style={{ color: project.textSecondary }}>
+                  {t("stripeCardNote")}
+                </p>
+              </div>
+            )}
+
+            <p className="mt-8 text-xs" style={{ color: project.textSecondary }}>
               {t("demoNote")}
             </p>
           </div>

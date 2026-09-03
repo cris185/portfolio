@@ -191,6 +191,11 @@
           "closingNote": "El frontend queda disponible en http://localhost:3000. Corre backend y frontend en dos terminales — el frontend depende de la API para todo (autenticación, citas, pagos, etc.)."
         }
       },
+      "demoStripeCards": [
+        { "number": "4242 4242 4242 4242", "result": "Visa — el pago se completa con éxito" },
+        { "number": "4000 0025 0000 3155", "result": "Visa — exige autenticación 3D Secure" },
+        { "number": "4000 0000 0000 9995", "result": "Visa — rechazada (fondos insuficientes)" }
+      ],
       "demoSpecializations": {
         "generalMedicine": "Medicina General",
         "cardiology": "Cardiología",
@@ -255,6 +260,11 @@
     "demoNote": "Demo pública — siéntete libre de entrar y explorar.",
     "demoPatient": "Paciente",
     "demoDoctors": "Doctores",
+    "testPayments": "Pagos de prueba",
+    "stripeDocsLink": "Documentación de tarjetas de prueba de Stripe",
+    "stripeCardNumber": "Número de tarjeta",
+    "stripeCardResult": "Resultado",
+    "stripeCardNote": "Usa cualquier fecha de expiración futura, cualquier CVC de 3 dígitos, y cualquier código postal.",
     "docsToggleOn": "Documentación completa",
     "docsToggleOff": "Leer la documentación completa",
     "docsSub": "Transcrito directamente del README del proyecto — arquitectura, modelo de datos, reglas de negocio y cómo correrlo.",

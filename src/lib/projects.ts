@@ -27,6 +27,8 @@ export interface Project {
     accounts?: { label: string; email: string; password: string }[];
     /** Optional larger grid of role-specific demo accounts (e.g. every seeded doctor), shown below `accounts` */
     doctors?: { specKey: string; name: string; email: string; password: string }[];
+    /** Link to the payment provider's own test-card documentation, shown alongside `stripeCards` */
+    stripeDocsUrl?: string;
   };
   /** Full documentation, transcribed verbatim from the project's own GitHub README */
   docs?: {
@@ -88,6 +90,7 @@ export const projects: Project[] = [
     hasStats: true,
     demoAccounts: {
       accounts: [{ label: "Patient", email: "patient@example.com", password: "Demo1234!" }],
+      stripeDocsUrl: "https://docs.stripe.com/testing",
       doctors: [
         { specKey: "generalMedicine", name: "Dr. Elena Rodriguez", email: "elena.rodriguez@chohealth.test", password: "Test1234!" },
         { specKey: "cardiology", name: "Dr. Marcus Chen", email: "marcus.chen@chohealth.test", password: "Test1234!" },
