@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { Lock, ArrowUpRight } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 
 export default async function ProfessionalSection() {
   const t = await getTranslations("professional");
@@ -51,6 +52,7 @@ export default async function ProfessionalSection() {
           featured
         />
         <ProCard
+          href="/professional/thesis"
           badge={t("openLabel")}
           badgeColor="#1d4ed8"
           name={t("thesis.name")}
@@ -78,6 +80,7 @@ function LockedIcon() {
 }
 
 function ProCard({
+  href,
   icon,
   badge,
   badgeColor,
@@ -89,6 +92,7 @@ function ProCard({
   featured,
   cta,
 }: {
+  href?: string;
   icon?: React.ReactNode;
   badge: string;
   badgeColor: string;
@@ -100,10 +104,10 @@ function ProCard({
   featured?: boolean;
   cta?: string;
 }) {
-  return (
+  const card = (
     <div
-      className={`overflow-hidden rounded-lg border ${
-        featured ? "sm:scale-105" : ""
+      className={`overflow-hidden rounded-lg border transition-colors ${featured ? "sm:scale-105" : ""} ${
+        href ? "hover:border-white/25" : ""
       }`}
       style={{ borderColor: "#ffffff14", background: gradient ?? "#101013" }}
     >
@@ -138,5 +142,13 @@ function ProCard({
         )}
       </div>
     </div>
+  );
+
+  return href ? (
+    <Link href={href} className="block">
+      {card}
+    </Link>
+  ) : (
+    card
   );
 }

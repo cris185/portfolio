@@ -446,6 +446,10 @@
     "back": "Expulsar cartucho",
     "visitLive": "Ver sitio en vivo",
     "viewRepo": "Ver en GitHub",
+    "viewCatalog": "Ver ficha universitaria",
+    "viewSource": "Ver código fuente",
+    "advisedBy": "Asesorado por",
+    "withTeammates": "Con",
     "techStack": "Stack tecnológico",
     "featuresTitle": "Qué hace",
     "demoAccount": "Cuentas demo",
@@ -469,11 +473,13 @@
       "api": "API",
       "schema": "Base de datos",
       "roles": "Roles",
+      "results": "Resultados",
       "limitations": "Limitaciones",
       "stack": "Stack",
       "roadmap": "Roadmap",
       "setup": "Correrlo"
     },
+    "resultsTitle": "Resultados",
     "overviewTitle": "Resumen",
     "modelArchitecture": "Arquitectura del modelo",
     "modelSpecs": "Especificaciones del modelo",
@@ -516,7 +522,114 @@
     "thesis": {
       "name": "AI-JobMatch",
       "role": "Proyecto de Grado — Feb–Nov 2023",
-      "description": "Un sistema de match entre candidatos y vacantes usando similitud de coseno y distancia euclidiana, con APIs de OpenAI para transcripción y análisis de candidatos. Descripción completa y link al artículo — nada se queda por fuera en este."
+      "category": "Proyecto de Grado — Universidad Tecnológica de Bolívar",
+      "university": "Universidad Tecnológica de Bolívar",
+      "period": "Febrero – Noviembre 2023",
+      "teammates": ["Hernan David Zuluaga Ricardo", "Gian Franco Valdiris Cerpa", "Owen de Jesús Tovar Puello"],
+      "advisors": ["Edwin Puertas", "Aisner Juliao"],
+      "description": "Un sistema que transcribe la videopresentación de un aspirante, extrae las habilidades y palabras clave que importan para una vacante específica, y calcula su afinidad contra ella — construido para reducir el tiempo que los reclutadores dedican a revisar manualmente videos de aspirantes, y el sesgo subjetivo que conlleva hacerlo a mano.",
+      "problemTitle": "El Problema",
+      "problem": "En el proceso de selección de candidatos, los reclutadores se enfrentan a un gran volumen de videos de aspirantes que deben revisar y evaluar manualmente. Este enfoque tradicional puede ser tedioso, consume mucho tiempo y conlleva el riesgo de sesgos subjetivos en la evaluación.",
+      "stats": "30 aspirantes × 10 vacantes evaluadas · 100% de matches correctos · 3 métricas ponderadas",
+      "features": [
+        "Transcribe la videopresentación de un aspirante con Whisper X y extrae palabras clave relevantes con NLP/n-grams",
+        "Vectoriza tanto la transcripción como la descripción de la vacante con TF-IDF para poder compararlas matemáticamente",
+        "Calcula la afinidad con tres métricas combinadas — similitud coseno, distancia euclidiana y habilidades coincidentes — en vez de confiar en una sola",
+        "Genera una nota de afinidad ponderada por par aspirante–vacante, mostrada como un porcentaje 0–100% o una nota 0–5",
+        "Documentado desde 6 puntos de vista de stakeholders — aspirantes, empresa, desarrolladores, reguladores, competidores, proveedores de tecnología — siguiendo IEEE 1471-2000",
+        "Validado con un dataset real: 30 transcripciones de aspirantes contra 10 vacantes, con 100% de aciertos"
+      ],
+      "docs": {
+        "problemLong": "AI-JobMatch es la arquitectura de software detrás de un sistema que lee la videopresentación de un aspirante, la transcribe, y convierte esa transcripción en una nota de afinidad cuantitativa contra una vacante específica — el mismo problema que los reclutadores ya resuelven a mano, a escala. En el proceso tradicional, los reclutadores revisan manualmente un gran volumen de videos de aspirantes: es lento, y deja espacio para que el sesgo subjetivo se cuele en quién avanza en el proceso. El sistema está organizado en cuatro capas — presentación (UI de carga y resultados), lógica de negocio (orquestación del pipeline), acceso a datos (los datasets y su persistencia), y servicios (funcionalidad compartida reutilizada en todo el pipeline) — y toda la arquitectura está documentada desde seis puntos de vista de stakeholders distintos (aspirantes, la empresa contratante, desarrolladores, reguladores, competidores y proveedores de tecnología), siguiendo el estándar IEEE 1471-2000 para descripción de arquitectura, de modo que el diseño responde a algo más que solo a quienes lo construyeron.",
+        "decisions": [
+          { "title": "Whisper X (OpenAI) para la transcripción, elegido específicamente por su precisión", "rationale": "Cada paso posterior — extracción de palabras clave, vectorización, puntuación — depende de que la transcripción sea precisa. Un modelo de reconocimiento de voz de alta precisión era un prerrequisito, no un lujo, ya que errores de transcripción corromperían en silencio cada métrica construida encima." },
+          { "title": "La afinidad se calcula con tres métricas combinadas, no con una sola", "rationale": "La similitud coseno y la distancia euclidiana dan cada una una visión global, en el espacio vectorial, de qué tan cerca está la transcripción de un aspirante de una descripción de vacante — dirección y magnitud, respectivamente — pero ninguna es sensible a que se mencione una habilidad específica puntual. Una tercera métrica, habilidades coincidentes, agrega esa precisión de vuelta. Las tres se combinan en una sola nota ponderada para que el resultado refleje tanto el ajuste general como los requisitos específicos." },
+          { "title": "Las palabras clave se representan con n-grams y vectorización TF-IDF, no con coincidencia de palabras cruda", "rationale": "Comparar palabras clave aisladas pierde el contexto en que aparecen. Representar transcripciones y descripciones de vacantes como vectores de n-grams, ponderados con TF-IDF, captura la estructura y relación entre palabras vecinas — que es justo lo que la similitud coseno y la distancia euclidiana necesitan para operar." },
+          { "title": "Una arquitectura por capas — presentación, lógica de negocio, acceso a datos, servicios", "rationale": "Separar la UI de carga/resultados de la orquestación del pipeline, de los datasets, de los servicios compartidos mantiene cada responsabilidad testeable y reemplazable de forma independiente — cambiar el motor de transcripción, por ejemplo, no debería requerir tocar cómo se muestran los resultados." },
+          { "title": "Seis puntos de vista de stakeholders, documentados de forma independiente, según IEEE 1471-2000", "rationale": "Una herramienta de reclutamiento tiene stakeholders cuyas preocupaciones entran en conflicto activamente — los aspirantes quieren equidad y privacidad, la empresa quiere velocidad y precisión, los reguladores quieren auditabilidad. Documentar las preocupaciones y restricciones de cada punto de vista por separado, en vez de una lista genérica de requisitos, hace explícitas esas tensiones en vez de disimularlas." },
+          { "title": "Dos datasets independientes — vacantes y transcripciones de aspirantes — relacionados muchos a muchos", "rationale": "Un dataset de vacantes (título, descripción, habilidades requeridas) y un dataset de aspirantes (ID, transcripción) se mantienen separados y pueden crecer cada uno de forma independiente — un aspirante puede postularse a muchas vacantes, y una vacante puede recibir muchos aspirantes, sin que el esquema fuerce un emparejamiento rígido uno a uno." }
+        ],
+        "architectureNote": "El sistema no tiene noción de colaboración en tiempo real ni de infraestructura multi-tenant — es un pipeline: entra un video, sale una nota. Las cuatro capas existen para mantener separadas las responsabilidades de ese pipeline, no para soportar escalamiento horizontal más allá de lo que necesita una sola corrida de evaluación.",
+        "dataFlowTitles": {
+          "useCases": "Casos de uso",
+          "components": "Vista de componentes",
+          "sequence": "Flujo de secuencia"
+        },
+        "schemaIntro": "El modelo de datos divide vacantes y aspirantes en dos datasets independientes, relacionados muchos a muchos: un aspirante puede postularse a varias vacantes, y una vacante puede recibir varios aspirantes.",
+        "schemaDiagramTitles": {
+          "main": "Datasets"
+        },
+        "roles": [
+          {
+            "role": "Aspirantes al cargo",
+            "capabilities": [
+              { "label": "Precisión, confiabilidad, imparcialidad", "text": "Confían en que la herramienta evalúe sus habilidades y experiencia de forma precisa e imparcial." },
+              { "label": "Privacidad y seguridad de datos", "text": "Esperan que sus datos personales se manejen de forma segura y nunca se compartan sin su consentimiento." },
+              { "label": "No discriminación", "text": "Esperan un proceso de selección libre de sesgos por edad, género, origen étnico, religión u otras características personales." }
+            ]
+          },
+          {
+            "role": "Empresa contratante",
+            "capabilities": [
+              { "label": "Rapidez y eficiencia", "text": "Necesita identificación de candidatos rápida y eficiente, sin sacrificar la calidad de la información proporcionada." },
+              { "label": "Criterios personalizables", "text": "Puede definir criterios de evaluación específicos por puesto en vez de una nota genérica única." },
+              { "label": "Transparencia", "text": "Necesita comprender claramente cómo se realiza la evaluación y qué factores la determinaron." },
+              { "label": "Garantías de seguridad de datos", "text": "Requiere estándares rigurosos de privacidad y seguridad para los datos personales de los candidatos." }
+            ]
+          },
+          {
+            "role": "Desarrolladores",
+            "capabilities": [
+              { "label": "Calidad y mantenimiento del modelo", "text": "Se enfocan en mantener el modelo preciso, actualizado y entrenado con datos de alta calidad." },
+              { "label": "Adaptabilidad", "text": "Necesitan que la herramienta se mantenga compatible con tecnologías emergentes de IA/NLP sin reescribirla." },
+              { "label": "Rendimiento del algoritmo de coincidencia", "text": "Optimizan el algoritmo de coincidencia para manejar grandes volúmenes de aspirantes en tiempo real." }
+            ]
+          },
+          {
+            "role": "Reguladores",
+            "capabilities": [
+              { "label": "Privacidad y protección de datos", "text": "Verifican el cumplimiento de las regulaciones de protección de datos y privacidad aplicables." },
+              { "label": "No discriminación", "text": "Esperan que la herramienta no discrimine por edad, género, origen étnico, religión u otras características." }
+            ]
+          },
+          {
+            "role": "Competidores",
+            "capabilities": [
+              { "label": "Posicionamiento en el mercado", "text": "Interesados en cómo se compara AI-JobMatch con soluciones existentes como Pymetrics, HireVue o IBM Watson Recruitment." }
+            ]
+          },
+          {
+            "role": "Proveedores de tecnología",
+            "capabilities": [
+              { "label": "Calidad y confiabilidad", "text": "Esperan que la herramienta dependa de tecnología y servicios confiables y de alta calidad." },
+              { "label": "Interoperabilidad", "text": "Esperan que sus propias soluciones — nube, librerías de ML, herramientas de transcripción como Whisper de OpenAI — sean compatibles con el sistema." }
+            ]
+          }
+        ],
+        "model": {
+          "specs": [
+            { "param": "Similitud coseno", "value": "Orientación vectorial entre el perfil de habilidades de un aspirante y los requisitos de una vacante — más cercano a 1 significa mayor afinidad." },
+            { "param": "Distancia euclidiana", "value": "Distancia geométrica directa entre esos mismos dos vectores — una distancia menor significa mayor afinidad." },
+            { "param": "Habilidades coincidentes", "value": "Coincidencia exacta entre las habilidades mencionadas explícitamente por el aspirante y las requeridas por la vacante." },
+            { "param": "Nota ponderada", "value": "Las tres métricas combinadas en una sola nota de afinidad, mostrada como un match de 0–100% o una calificación de 0–5." }
+          ]
+        },
+        "results": [
+          "Evaluado contra 30 transcripciones de aspirantes y 10 vacantes, el sistema encontró la correspondencia correcta transcripción-vacante en el 100% de los casos usando solo similitud coseno y distancia euclidiana.",
+          "La tercera métrica, habilidades coincidentes, refinó aún más ese resultado comparando las habilidades específicas que requiere una vacante contra las que el aspirante realmente mencionó en contexto.",
+          "La similitud coseno y la distancia euclidiana se movieron en las direcciones opuestas esperadas a lo largo del conjunto de prueba — mayor similitud siempre emparejada con menor distancia — que es el comportamiento que da confianza en que los patrones de afinidad detectados son reales, no ruido."
+        ],
+        "limitations": [
+          "Los resultados dependen fuertemente de la calidad de la transcripción — ruido de fondo o una transcripción inexacta degrada directamente cada métrica posterior.",
+          "El modelo es más efectivo en contextos lingüísticos generales y puede tener limitaciones al procesar dialectos específicos o variaciones lingüísticas marcadas.",
+          "Si los datos de entrenamiento tienen sesgos, el modelo puede reflejar esos sesgos en sus evaluaciones — se implementan medidas de mitigación, pero no se puede garantizar una eliminación completa.",
+          "La afinidad se calcula a partir de un único input — la transcripción del video — por diseño; no considera gestos faciales ni entonación de voz, algo que podría añadir robustez en una futura versión."
+        ],
+        "roadmap": [
+          "Probar el modelo contra un dataset sintético más grande con resultados esperados conocidos, para validarlo contra un referente concreto.",
+          "Comparar esos resultados de datos sintéticos contra datos reales, para monitorear qué tanto se aleja el comportamiento real de la línea base esperada a mayor escala."
+        ]
+      }
     },
     "verifylead": {
       "name": "Verify Lead",

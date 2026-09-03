@@ -446,6 +446,10 @@
     "back": "Eject cartridge",
     "visitLive": "Visit live site",
     "viewRepo": "View on GitHub",
+    "viewCatalog": "View university record",
+    "viewSource": "View source code",
+    "advisedBy": "Advised by",
+    "withTeammates": "With",
     "techStack": "Tech stack",
     "featuresTitle": "What it does",
     "demoAccount": "Demo accounts",
@@ -469,11 +473,13 @@
       "api": "API",
       "schema": "Database",
       "roles": "Roles",
+      "results": "Results",
       "limitations": "Limitations",
       "stack": "Tech stack",
       "roadmap": "Roadmap",
       "setup": "Run it"
     },
+    "resultsTitle": "Results",
     "overviewTitle": "Overview",
     "modelArchitecture": "Model architecture",
     "modelSpecs": "Model specifications",
@@ -516,7 +522,114 @@
     "thesis": {
       "name": "AI-JobMatch",
       "role": "Bachelor's Thesis — Feb–Nov 2023",
-      "description": "A candidate-to-job matching system using cosine similarity and Euclidean distance metrics, with OpenAI APIs for transcription and candidate analysis. Full write-up and a link to the paper — nothing held back on this one."
+      "category": "Bachelor's Thesis — Universidad Tecnológica de Bolívar",
+      "university": "Universidad Tecnológica de Bolívar",
+      "period": "February – November 2023",
+      "teammates": ["Hernan David Zuluaga Ricardo", "Gian Franco Valdiris Cerpa", "Owen de Jesús Tovar Puello"],
+      "advisors": ["Edwin Puertas", "Aisner Juliao"],
+      "description": "A system that transcribes a candidate's video interview, extracts the skills and keywords that matter for a specific vacancy, and scores their affinity against it — built to reduce the time recruiters spend manually screening applicant videos, and the subjective bias that comes with doing it by hand.",
+      "problemTitle": "The Problem",
+      "problem": "Recruiters reviewing candidates for a position face a large volume of applicant videos they have to watch and evaluate manually. That traditional approach is tedious, time-consuming, and carries a real risk of subjective bias creeping into who gets shortlisted.",
+      "stats": "30 candidates × 10 vacancies tested · 100% correct matches · 3 weighted metrics",
+      "features": [
+        "Transcribes a candidate's video interview with Whisper X and extracts job-relevant keywords with NLP/n-grams",
+        "Vectorizes both the transcript and the job description with TF-IDF so they can be compared mathematically",
+        "Scores affinity with three combined metrics — cosine similarity, Euclidean distance, and exact skill matching — instead of trusting a single one",
+        "Produces a weighted affinity score per candidate–vacancy pair, shown as a 0–100% match or a 0–5 rating",
+        "Documented across 6 stakeholder viewpoints — applicants, company, developers, regulators, competitors, technology providers — following IEEE 1471-2000",
+        "Validated on a real dataset: 30 candidate transcripts against 10 vacancies, with a 100% correct-match rate"
+      ],
+      "docs": {
+        "problemLong": "AI-JobMatch is the software architecture behind a system that reads a candidate's video interview, transcribes it, and turns that transcript into a quantitative affinity score against a specific job vacancy — the same problem recruiters already solve by hand, at scale. In the traditional process, recruiters review a large volume of candidate videos manually: it's slow, and it leaves room for subjective bias to creep into who gets shortlisted. The system is organized in four layers — presentation (upload and results UI), business logic (orchestrating the pipeline), data access (the datasets and their persistence), and services (shared functionality reused across the pipeline) — and the whole architecture is documented from six separate stakeholder viewpoints (applicants, the hiring company, developers, regulators, competitors, and technology providers), following the IEEE 1471-2000 standard for architecture description, so the design is accountable to more than just the people who built it.",
+        "decisions": [
+          { "title": "Whisper X (OpenAI) for transcription, chosen specifically for precision", "rationale": "Every downstream step — keyword extraction, vectorization, scoring — depends on the transcript being accurate. A high-precision speech-recognition model was a prerequisite, not a nice-to-have, since transcription errors would silently corrupt every metric built on top of them." },
+          { "title": "Affinity is scored with three combined metrics, not one", "rationale": "Cosine similarity and Euclidean distance each give a global, vector-space view of how close a candidate's transcript is to a job description — direction and magnitude, respectively — but neither is sensitive to one specific skill actually being mentioned. A third metric, exact skill matching, adds that precision back in. The three are combined into one weighted score so the result reflects both overall fit and specific requirements." },
+          { "title": "Keywords are represented with n-grams and TF-IDF vectorization, not raw word matching", "rationale": "Comparing isolated keywords loses the context they appear in. Representing transcripts and job descriptions as n-gram vectors, weighted with TF-IDF, captures the structure and relationship between neighboring words — which is what cosine similarity and Euclidean distance actually need to operate on." },
+          { "title": "A layered architecture — presentation, business logic, data access, services", "rationale": "Separating the upload/results UI from the pipeline orchestration, from the datasets, from shared services keeps each concern independently testable and replaceable — swapping the transcription engine, for example, shouldn't require touching how results are displayed." },
+          { "title": "Six stakeholder viewpoints, documented independently, per IEEE 1471-2000", "rationale": "A recruiting tool has stakeholders whose concerns actively conflict — applicants want fairness and privacy, the hiring company wants speed and precision, regulators want auditability. Documenting each viewpoint's concerns and constraints separately, rather than one generic requirements list, makes those tensions explicit instead of papering over them." },
+          { "title": "Two independent datasets — vacancies and candidate transcripts — related many-to-many", "rationale": "A vacancy dataset (title, description, required skills) and a candidate dataset (ID, transcript) are kept separate and can each grow independently — one candidate can apply to many vacancies, and one vacancy can receive many candidates, without the schema forcing a rigid one-to-one pairing." }
+        ],
+        "architectureNote": "The system has no notion of real-time collaboration or multi-tenant infrastructure — it's a pipeline: a video comes in, a score comes out. The four layers exist to keep that pipeline's concerns separated, not to support horizontal scale beyond what a single evaluation run needs.",
+        "dataFlowTitles": {
+          "useCases": "Use cases",
+          "components": "Component view",
+          "sequence": "Sequence flow"
+        },
+        "schemaIntro": "The data model splits vacancies and candidates into two independent datasets, related many-to-many: one candidate can apply to several vacancies, and one vacancy can receive several candidates.",
+        "schemaDiagramTitles": {
+          "main": "Datasets"
+        },
+        "roles": [
+          {
+            "role": "Job applicants",
+            "capabilities": [
+              { "label": "Accuracy, reliability, fairness", "text": "Trust that the tool evaluates their skills and experience accurately and impartially." },
+              { "label": "Data privacy & security", "text": "Expect personal data to be handled securely and never shared without consent." },
+              { "label": "Non-discrimination", "text": "Expect a selection process free of bias around age, gender, ethnicity, religion, or other personal traits." }
+            ]
+          },
+          {
+            "role": "Hiring company",
+            "capabilities": [
+              { "label": "Speed & efficiency", "text": "Need fast, efficient candidate identification without sacrificing the quality of the information provided." },
+              { "label": "Customizable criteria", "text": "Can define specific evaluation criteria per position rather than a one-size-fits-all score." },
+              { "label": "Transparency", "text": "Need to understand clearly how the evaluation is performed and which factors drove it." },
+              { "label": "Data security guarantees", "text": "Require rigorous privacy and security standards for candidates' personal data." }
+            ]
+          },
+          {
+            "role": "Developers",
+            "capabilities": [
+              { "label": "Model quality & upkeep", "text": "Focus on keeping the model accurate, up to date, and trained on high-quality data." },
+              { "label": "Adaptability", "text": "Need the tool to stay compatible with emerging AI/NLP technologies without a rewrite." },
+              { "label": "Matching algorithm performance", "text": "Optimize the matching algorithm to handle large volumes of candidates in real time." }
+            ]
+          },
+          {
+            "role": "Regulators",
+            "capabilities": [
+              { "label": "Data privacy & protection", "text": "Verify compliance with applicable data-protection and privacy regulations." },
+              { "label": "Non-discrimination", "text": "Expect the tool not to discriminate by age, gender, ethnicity, religion, or other characteristics." }
+            ]
+          },
+          {
+            "role": "Competitors",
+            "capabilities": [
+              { "label": "Market positioning", "text": "Interested in how AI-JobMatch compares to existing solutions like Pymetrics, HireVue, or IBM Watson Recruitment." }
+            ]
+          },
+          {
+            "role": "Technology providers",
+            "capabilities": [
+              { "label": "Quality & reliability", "text": "Expect the tool to rely on high-quality, dependable technology and services." },
+              { "label": "Interoperability", "text": "Expect their own solutions — cloud, ML libraries, transcription tools like OpenAI's Whisper — to be compatible with the system." }
+            ]
+          }
+        ],
+        "model": {
+          "specs": [
+            { "param": "Cosine similarity", "value": "Vector orientation between a candidate's skill profile and a job's requirements — closer to 1 means a stronger match." },
+            { "param": "Euclidean distance", "value": "Direct geometric distance between the same two vectors — a smaller distance means a stronger match." },
+            { "param": "Matching skills", "value": "Exact overlap between skills explicitly mentioned by the candidate and those required by the vacancy." },
+            { "param": "Weighted score", "value": "The three metrics combined into one affinity score, shown as a 0–100% match or a 0–5 rating." }
+          ]
+        },
+        "results": [
+          "Tested against 30 candidate transcripts and 10 job vacancies, the system found the correct transcript-to-vacancy match in 100% of cases using cosine similarity and Euclidean distance alone.",
+          "The third metric, exact skill matching, refined that result further by comparing the specific skills a vacancy requires against the ones a candidate actually mentioned in context.",
+          "Cosine similarity and Euclidean distance moved in the expected opposite directions across the test set — higher similarity consistently paired with lower distance — which is the behavior that gives confidence the affinity patterns being detected are real, not noise."
+        ],
+        "limitations": [
+          "Results depend heavily on transcription quality — background noise or an inaccurate transcript directly degrades every downstream metric.",
+          "The model is more effective on general linguistic contexts and may have limitations processing specific dialects or strong linguistic variation.",
+          "If the training data carries bias, the model can reflect that bias in its evaluations — mitigation measures are in place, but complete elimination of bias can't be guaranteed.",
+          "Affinity is scored from a single input — the video transcript — by design; it does not account for facial expressions or vocal tone, which could add robustness in a future version."
+        ],
+        "roadmap": [
+          "Test the model against a larger synthetic dataset with known expected outcomes, to validate it against a concrete ground truth.",
+          "Compare those synthetic-data results against real-world data, to monitor how far actual behavior diverges from the expected baseline at scale."
+        ]
+      }
     },
     "verifylead": {
       "name": "Verify Lead",

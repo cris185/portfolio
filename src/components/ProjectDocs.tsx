@@ -13,11 +13,12 @@ import {
   Database,
   Users,
   AlertTriangle,
+  CheckCircle2,
   Layers,
   Map as MapIcon,
   Terminal,
 } from "lucide-react";
-import type { ProjectId, Project } from "@/lib/projects";
+import type { Project } from "@/lib/projects";
 import MermaidDiagram from "./MermaidDiagram";
 import FileTree from "./FileTree";
 import LayerStackDiagram from "./LayerStackDiagram";
@@ -31,6 +32,7 @@ type TabKey =
   | "api"
   | "schema"
   | "roles"
+  | "results"
   | "limitations"
   | "stack"
   | "roadmap"
@@ -45,6 +47,7 @@ const TAB_ICONS: Record<TabKey, typeof FileText> = {
   api: Code2,
   schema: Database,
   roles: Users,
+  results: CheckCircle2,
   limitations: AlertTriangle,
   stack: Layers,
   roadmap: MapIcon,
@@ -60,6 +63,7 @@ const TAB_ORDER: TabKey[] = [
   "api",
   "schema",
   "roles",
+  "results",
   "limitations",
   "stack",
   "roadmap",
@@ -109,6 +113,7 @@ function CodeBlock({ code, isDark, pillBorder }: { code: string; isDark: boolean
 
 export default function ProjectDocs({
   projectId,
+  namespace = "projects",
   docs,
   accentText,
   textPrimary,
@@ -117,7 +122,9 @@ export default function ProjectDocs({
   pillBg,
   isDark,
 }: {
-  projectId: ProjectId;
+  projectId: string;
+  /** Messages namespace holding `${namespace}.${projectId}.docs.*` — defaults to "projects" for the personal-build pages */
+  namespace?: string;
   docs: NonNullable<Project["docs"]>;
   accentText: string;
   textPrimary: string;
@@ -129,7 +136,7 @@ export default function ProjectDocs({
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<TabKey>("overview");
   const t = useTranslations("projectPage");
-  const tp = useTranslations(`projects.${projectId}`) as unknown as Translator;
+  const tp = useTranslations(`${namespace}.${projectId}`) as unknown as Translator;
 
   const decisions = safeRaw(tp, "docs.decisions", [] as { title: string; rationale: string }[]);
   const businessRules = safeRaw(tp, "docs.businessRules", [] as { category: string; rules: string[] }[]);
@@ -144,6 +151,7 @@ export default function ProjectDocs({
     note: "",
   });
   const limitations = safeRaw(tp, "docs.limitations", [] as string[]);
+  const results = safeRaw(tp, "docs.results", [] as string[]);
   const roadmap = safeRaw(tp, "docs.roadmap", [] as string[]);
   const schemaDiagramTitles = safeRaw(tp, "docs.schemaDiagramTitles", {} as Record<string, string>);
   const entityGlossary = safeRaw(tp, "docs.entityGlossary", [] as { entity: string; purpose: string }[]);
@@ -172,6 +180,7 @@ export default function ProjectDocs({
     if (key === "api") return apiReference.length > 0;
     if (key === "schema") return !!docs.schemaDiagrams?.length;
     if (key === "roles") return roles.length > 0;
+    if (key === "results") return results.length > 0;
     if (key === "limitations") return limitations.length > 0;
     if (key === "stack") return docs.fullStack.length > 0;
     if (key === "roadmap") return roadmap.length > 0;
@@ -455,14 +464,16 @@ export default function ProjectDocs({
                 </div>
               )}
 
-              <div className="mt-8">
-                <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
-                  {t("uncertaintyQuantification")}
+              {safeT(tp, "docs.model.uncertaintyNote") && (
+                <div className="mt-8">
+                  <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                    {t("uncertaintyQuantification")}
+                  </div>
+                  <p className="max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
+                    {safeT(tp, "docs.model.uncertaintyNote")}
+                  </p>
                 </div>
-                <p className="max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
-                  {safeT(tp, "docs.model.uncertaintyNote")}
-                </p>
-              </div>
+              )}
             </div>
           )}
 
@@ -638,6 +649,21 @@ export default function ProjectDocs({
                   </p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* results */}
+          {activeTab === "results" && (
+            <div>
+              <SectionLabel color={accentText}>{t("resultsTitle")}</SectionLabel>
+              <ul className="flex flex-col gap-5">
+                {results.map((r, i) => (
+                  <li key={i} className="flex items-start gap-3 text-[13px] leading-relaxed" style={{ color: textPrimary }}>
+                    <CheckCircle2 size={15} className="mt-0.5 shrink-0" style={{ color: accentText }} />
+                    <span>{r}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
