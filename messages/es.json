@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "title": "Cristian Puentes — Full Stack Developer",
+    "description": "Desarrollador full stack construyendo productos reales de punta a punta — desde la interfaz hasta el servidor donde corren."
+  },
+  "nav": {
+    "projects": "Proyectos",
+    "professional": "Experiencia",
+    "contact": "Contacto",
+    "resume": "CV"
+  },
+  "hero": {
+    "eyebrow": "Full Stack Developer",
+    "headlineLine1": "Construyo productos,",
+    "headlineLine2": "no solo funcionalidades.",
+    "sub": "Django, Next.js y Postgres de día a día — últimamente, de todo, desde infraestructura self-hosted hasta sistemas de reservas para salud. Me gusta ser dueño de todo el stack, servidores incluidos.",
+    "cta": "Ver Proyectos",
+    "ctaSecondary": "Escríbeme"
+  },
+  "home": {
+    "sectionLabel": "Proyectos Personales",
+    "hudSelect": "Seleccionar",
+    "hudBrowse": "Navegar",
+    "hudTerminal": "Terminal",
+    "availableForWork": "Disponible para trabajar",
+    "moreSoon": "Pronto más"
+  },
+  "projects": {
+    "chohealth": {
+      "name": "CHOHEALTH",
+      "tagline": "Reservas de citas médicas, self-hosted de punta a punta",
+      "category": "Proyecto Personal — Salud",
+      "description": "Una plataforma de reservas que permite a clínicas gestionar citas, historiales médicos y pagos — construida y desplegada de punta a punta, desde la API en Django hasta el servidor donde corre.",
+      "problemTitle": "El Problema",
+      "problem": "Las clínicas pequeñas manejaban agendas en papel y tres herramientas desconectadas para reservas, facturación e historiales — nada se comunicaba entre sí, y las citas duplicadas eran algo común."
+    },
+    "choplanner": {
+      "name": "CHO Planner",
+      "tagline": "Gestor de tareas con IA, local-first",
+      "category": "Proyecto Personal — Productividad",
+      "description": "Un gestor de tareas y notas personal con un asistente de IA intercambiable — Claude, GPT o Gemini — que descompone objetivos en subtareas con pesos y opcionalmente sincroniza con Google Calendar. Local-first: funciona completamente sin ningún servicio externo."
+    },
+    "neurostock": {
+      "name": "Neurostock",
+      "tagline": "Predicción de acciones con redes neuronales LSTM",
+      "category": "Proyecto Personal — Machine Learning",
+      "description": "Predice el precio de cualquier acción usando una red neuronal LSTM entrenada con datos históricos, con Monte Carlo Dropout para estimar incertidumbre y prevención estricta de data leakage entre entrenamiento y prueba."
+    },
+    "sevenlever": {
+      "name": "Seven Lever",
+      "tagline": "El juego de dados de colegio colombiano",
+      "category": "Proyecto Personal — Juego",
+      "description": "Un juego de dados local para dos jugadores basado en el \"Seven Eleven\" que se juega en los colegios colombianos — apuestas, barra de vida, y una animación de derrota, todo vivo en el frontend."
+    }
+  },
+  "projectPage": {
+    "back": "Expulsar cartucho",
+    "visitLive": "Ver sitio en vivo",
+    "techStack": "Stack tecnológico",
+    "demoAccount": "Cuenta demo",
+    "demoNote": "Demo pública — siéntete libre de entrar y explorar."
+  },
+  "professional": {
+    "sectionLabel": "Experiencia Profesional",
+    "headline": "Trabajo Profesional",
+    "sub": "El código de clientes y empleadores se queda con ellos — esto es lo que sí puedo compartir.",
+    "pendingApproval": "Pendiente de aprobación",
+    "openLabel": "Abierto — artículo enlazado",
+    "footerNote": "Las descripciones siempre son mías para compartir — imágenes y links se suben a medida que llegan las aprobaciones."
+  }
+}

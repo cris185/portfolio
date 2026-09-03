@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "title": "Cristian Puentes — Full Stack Developer",
+    "description": "Full stack developer building real products end to end — from the interface down to the server they run on."
+  },
+  "nav": {
+    "projects": "Projects",
+    "professional": "Experience",
+    "contact": "Contact",
+    "resume": "Resume"
+  },
+  "hero": {
+    "eyebrow": "Full Stack Developer",
+    "headlineLine1": "I build products,",
+    "headlineLine2": "not just features.",
+    "sub": "Django, Next.js and Postgres by day — lately, everything from self-hosted infrastructure to healthcare booking systems. I like owning the whole stack, servers included.",
+    "cta": "View Projects",
+    "ctaSecondary": "Get in touch"
+  },
+  "home": {
+    "sectionLabel": "Personal Builds",
+    "hudSelect": "Select",
+    "hudBrowse": "Browse",
+    "hudTerminal": "Terminal",
+    "availableForWork": "Available for work",
+    "moreSoon": "More soon"
+  },
+  "projects": {
+    "chohealth": {
+      "name": "CHOHEALTH",
+      "tagline": "Healthcare booking, self-hosted end to end",
+      "category": "Personal Project — Healthcare",
+      "description": "A booking platform that lets clinics manage appointments, medical records and payments — built and deployed end to end, from the Django API down to the server it runs on.",
+      "problemTitle": "The Problem",
+      "problem": "Small clinics were juggling paper schedules and three disconnected tools for booking, billing and records — nothing talked to each other, and double-bookings were routine."
+    },
+    "choplanner": {
+      "name": "CHO Planner",
+      "tagline": "AI-assisted task manager, local-first",
+      "category": "Personal Project — Productivity",
+      "description": "A personal task and note manager with a swappable AI assistant — Claude, GPT or Gemini — that breaks goals into weighted subtasks and optionally syncs with Google Calendar. Local-first: it works fully without any external service."
+    },
+    "neurostock": {
+      "name": "Neurostock",
+      "tagline": "Stock price prediction with LSTM neural networks",
+      "category": "Personal Project — Machine Learning",
+      "description": "Predicts stock prices for any ticker using an LSTM neural network trained on historical data, with Monte Carlo Dropout for uncertainty estimation and strict data-leakage prevention between training and test sets."
+    },
+    "sevenlever": {
+      "name": "Seven Lever",
+      "tagline": "The Colombian schoolyard dice game",
+      "category": "Personal Project — Game",
+      "description": "A local two-player dice game based on \"Seven Eleven\", the game played in Colombian schoolyards — bets, a life bar, and an animated loss sequence, all live in the frontend."
+    }
+  },
+  "projectPage": {
+    "back": "Eject cartridge",
+    "visitLive": "Visit live site",
+    "techStack": "Tech stack",
+    "demoAccount": "Demo account",
+    "demoNote": "Public demo — feel free to log in and click around."
+  },
+  "professional": {
+    "sectionLabel": "Professional Builds",
+    "headline": "Professional Work",
+    "sub": "Client & employer code stays with them — here's what I can share.",
+    "pendingApproval": "Pending approval",
+    "openLabel": "Open — paper linked",
+    "footerNote": "Descriptions are always mine to share — images and links go up as approvals come in."
+  }
+}
