@@ -83,7 +83,7 @@ export const professionalWorks: ProfessionalWork[] = [
     accentText: "#77e4c6",
     pillBg: "#77e4c614",
     pillBorder: "#77e4c62e",
-    techStack: [],
+    techStack: ["Next.js", "JavaScript", "TypeScript", "Firebase", "PayArc"],
     hasProblem: false,
   },
   {
