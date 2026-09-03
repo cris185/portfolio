@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { ArrowUpRight, Check } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -137,20 +138,32 @@ export default async function ProjectDetailPage({
               {new URL(project.href).host}
             </span>
           </div>
-          <div
-            className="flex h-72 gap-4 rounded-lg p-5"
-            style={{ background: isDark ? "#00000020" : project.bodyBg }}
-          >
-            <div className="w-44 rounded-md" style={{ background: isDark ? "#ffffff08" : "#ffffff", border: `1px solid ${project.pillBorder}` }} />
-            <div className="flex flex-1 flex-col gap-3.5">
-              <div className="flex gap-3.5">
-                <div className="h-20 flex-1 rounded-md" style={{ background: isDark ? "#ffffff08" : "#ffffff", border: `1px solid ${project.pillBorder}` }} />
-                <div className="h-20 flex-1 rounded-md opacity-90" style={{ background: project.accentText }} />
-                <div className="h-20 flex-1 rounded-md" style={{ background: isDark ? "#ffffff08" : "#ffffff", border: `1px solid ${project.pillBorder}` }} />
-              </div>
-              <div className="flex-1 rounded-md" style={{ background: isDark ? "#ffffff08" : "#ffffff", border: `1px solid ${project.pillBorder}` }} />
+          {project.detailImage ? (
+            <div className="relative overflow-hidden rounded-lg" style={{ aspectRatio: "16 / 8" }}>
+              <Image
+                src={project.detailImage}
+                alt={`${tp("name")} screenshot`}
+                fill
+                className="object-cover object-top"
+                sizes="(max-width: 900px) 100vw, 900px"
+              />
             </div>
-          </div>
+          ) : (
+            <div
+              className="flex h-72 gap-4 rounded-lg p-5"
+              style={{ background: isDark ? "#00000020" : project.bodyBg }}
+            >
+              <div className="w-44 rounded-md" style={{ background: isDark ? "#ffffff08" : "#ffffff", border: `1px solid ${project.pillBorder}` }} />
+              <div className="flex flex-1 flex-col gap-3.5">
+                <div className="flex gap-3.5">
+                  <div className="h-20 flex-1 rounded-md" style={{ background: isDark ? "#ffffff08" : "#ffffff", border: `1px solid ${project.pillBorder}` }} />
+                  <div className="h-20 flex-1 rounded-md opacity-90" style={{ background: project.accentText }} />
+                  <div className="h-20 flex-1 rounded-md" style={{ background: isDark ? "#ffffff08" : "#ffffff", border: `1px solid ${project.pillBorder}` }} />
+                </div>
+                <div className="flex-1 rounded-md" style={{ background: isDark ? "#ffffff08" : "#ffffff", border: `1px solid ${project.pillBorder}` }} />
+              </div>
+            </div>
+          )}
         </div>
 
         {project.hasProblem && (

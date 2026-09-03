@@ -5,8 +5,9 @@ export interface Project {
   gradient: string;
   glow: string;
   href: string;
-  /** Drop a real screenshot at /public/covers/<id>.jpg and set this to enable it */
+  /** Card thumbnail (portrait) and wide detail-page screenshot, served from MinIO */
   coverImage?: string;
+  detailImage?: string;
   mode: "light" | "dark";
   /** Hero band background (top of the detail page, before the diagonal seam) */
   heroBg: string;
@@ -47,6 +48,8 @@ export const projects: Project[] = [
       "linear-gradient(155deg, var(--chohealth-1), var(--chohealth-2) 60%, var(--chohealth-3))",
     glow: "var(--chohealth-2)",
     href: "https://chohealth.cristianpuentes.com",
+    coverImage: "https://minio-api.cristianpuentes.com/portfolio-media/covers/chohealth-card.jpg",
+    detailImage: "https://minio-api.cristianpuentes.com/portfolio-media/covers/chohealth-detail.jpg",
     mode: "light",
     heroBg: "#0b1b3a",
     bodyBg: "#eaf2ff",
