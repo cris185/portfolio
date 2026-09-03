@@ -246,6 +246,7 @@
     "docsToggleOff": "Read the full documentation",
     "docsSub": "Transcribed from the project's own README — architecture, data model, business rules and how to run it.",
     "tabs": {
+      "overview": "Overview",
       "decisions": "Decisions",
       "rules": "Business rules",
       "architecture": "Architecture",

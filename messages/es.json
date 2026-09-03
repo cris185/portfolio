@@ -246,6 +246,7 @@
     "docsToggleOff": "Leer la documentación completa",
     "docsSub": "Transcrito directamente del README del proyecto — arquitectura, modelo de datos, reglas de negocio y cómo correrlo.",
     "tabs": {
+      "overview": "Resumen",
       "decisions": "Decisiones",
       "rules": "Reglas de negocio",
       "architecture": "Arquitectura",
