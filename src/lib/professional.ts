@@ -45,7 +45,7 @@ export const professionalWorks: ProfessionalWork[] = [
     accentText: "#8b7edc",
     pillBg: "#8b7edc14",
     pillBorder: "#8b7edc2e",
-    techStack: ["Next.js", "Node.js / Express", "PostgreSQL (Prisma)", "Redis / BullMQ", "SendGrid", "Twilio"],
+    techStack: ["Next.js", "Node.js / Express", "PostgreSQL (Prisma)", "Redis / BullMQ", "SendGrid", "Twilio", "PayArc"],
     hasProblem: false,
   },
   {
