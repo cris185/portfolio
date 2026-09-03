@@ -43,7 +43,7 @@ export default async function ProfessionalSection() {
         basePath="/professional"
         storageKey="cf-active-professional"
         ariaLabel={t("sectionLabel")}
-        defaultActive={items.length - 1}
+        defaultActive={items.findIndex((w) => w.id === "verifylead")}
       />
 
       <p className="relative mx-auto mt-4 max-w-md text-center font-mono text-[11px] text-muted">

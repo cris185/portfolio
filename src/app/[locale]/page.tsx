@@ -56,7 +56,7 @@ export default async function HomePage() {
             storageKey="cf-active-project"
             ariaLabel={t("sectionLabel")}
             moreSoonLabel={t("moreSoon")}
-            defaultActive={1}
+            defaultActive={projects.findIndex((p) => p.id === "chohealth")}
           />
         </div>
 

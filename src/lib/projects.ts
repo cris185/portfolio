@@ -262,6 +262,220 @@ npm run dev`,
     },
   },
   {
+    id: "choplanner",
+    gradient:
+      "linear-gradient(200deg, var(--choplanner-1), var(--choplanner-2) 65%, var(--choplanner-3))",
+    glow: "var(--choplanner-2)",
+    href: "https://cho-planner.cristianpuentes.com",
+    repo: "https://github.com/cris185/cho-planner",
+    coverImage: "https://minio-api.cristianpuentes.com/portfolio-media/covers/choplanner-card.jpg",
+    screenshots: [
+      { label: "Board", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/choplanner-board.jpg" },
+      { label: "Assistant", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/choplanner-settings.jpg" },
+      { label: "Task detail", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/choplanner-task.jpg" },
+      { label: "Notes", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/choplanner-notes.jpg" },
+    ],
+    mode: "light",
+    heroBg: "#1c1740",
+    bodyBg: "#f3f1fc",
+    textPrimary: "#241c52",
+    textSecondary: "#5b5480",
+    accentText: "#534ab7",
+    pillBg: "#534ab70f",
+    pillBorder: "#534ab72a",
+    techStack: ["Next.js 16", "React 19", "Prisma", "NextAuth", "Vercel AI SDK", "Google Calendar API"],
+    hasProblem: true,
+    demoAccounts: {
+      accounts: [{ label: "Demo", identifierLabel: "Email", identifier: "demo@choplanner.local", password: "demo1234" }],
+    },
+    docs: {
+      fullStack: [
+        { layer: "Next.js 16 (App Router)", tech: "React 19, TypeScript — framework and typing" },
+        { layer: "Tailwind CSS 4", tech: "Mobile-first responsive styling" },
+        { layer: "shadcn/ui + Radix UI", tech: "Accessible, headless component primitives" },
+        { layer: "dnd-kit", tech: "Drag and drop with touch sensors" },
+        { layer: "next-themes", tech: "Light/dark mode without flicker" },
+        { layer: "DiceBear", tech: "Assistant avatar generation" },
+        { layer: "react-markdown + remark-gfm", tech: "Markdown rendering for notes" },
+        { layer: "PWA", tech: "Web App Manifest + service worker, installable with offline support" },
+        { layer: "Server Actions", tech: "CRUD for all entities" },
+        { layer: "Route Handlers", tech: "Chat streaming, Google OAuth callback, sync" },
+        { layer: "Prisma 6", tech: "ORM" },
+        { layer: "PostgreSQL 17", tech: "Database" },
+        { layer: "Auth.js (NextAuth v5)", tech: "Credentials-based authentication" },
+        { layer: "bcryptjs", tech: "Password hashing" },
+        { layer: "Vercel AI SDK", tech: "Single multi-provider adapter (Claude, GPT, Gemini)" },
+        { layer: "Zod", tech: "Structured-output contract and validation" },
+        { layer: "googleapis", tech: "OAuth 2.0 with incremental syncToken" },
+        { layer: "AES-256-GCM", tech: "Encryption of API keys and refresh tokens at rest" },
+        { layer: "Docker Compose", tech: "Local Postgres for development" },
+      ],
+      architectureDiagram: `flowchart LR
+    subgraph instance["Your instance — works with nothing external"]
+        NEXT["Next.js<br/>UI + API (RSC, Server Actions)"]
+        DB[("PostgreSQL<br/>your data")]
+        VAULT["Credentials vault<br/>API keys + refresh tokens<br/>AES-256-GCM, never leave the instance"]
+        NEXT --> DB
+        NEXT --> VAULT
+    end
+
+    GCAL[["Google Calendar<br/>optional · OAuth 2.0"]]
+    LLM[["LLM provider<br/>optional · your key<br/>Claude / GPT / Gemini"]]
+
+    instance -.->|"optional"| GCAL
+    instance -.->|"optional"| LLM`,
+      architectureTree: [
+        {
+          name: "cho-planner/",
+          children: [
+            {
+              name: "prisma/",
+              children: [
+                { name: "schema.prisma", comment: "10 models + TaskStatus enum" },
+                { name: "seed.ts", comment: "sample data (demo user)" },
+              ],
+            },
+            {
+              name: "src/",
+              children: [
+                {
+                  name: "app/",
+                  children: [
+                    { name: "(auth)/", comment: "login and registration" },
+                    { name: "(dashboard)/", comment: "board, sprints, notes, chat, settings" },
+                    { name: "api/", comment: "chat (streaming), google (OAuth), calendar (sync)" },
+                  ],
+                },
+                { name: "components/", comment: "ui, board, chat, assistant, note" },
+                {
+                  name: "lib/",
+                  children: [
+                    { name: "crypto.ts", comment: "AES-256-GCM encrypt/decrypt" },
+                    { name: "ai/", comment: "registry, schemas (Zod), generate, provider" },
+                    { name: "google/", comment: "oauth, calendar" },
+                  ],
+                },
+                { name: "server/actions/", comment: "Server Actions (CRUD per entity)" },
+                { name: "validations/", comment: "input schemas" },
+              ],
+            },
+            { name: "docker-compose.yml", comment: "local Postgres" },
+            { name: ".env.example", comment: "variables template (no secrets)" },
+            { name: "package.json" },
+          ],
+        },
+      ],
+      dataFlows: [
+        {
+          key: "aiGeneration",
+          mermaid: `flowchart TD
+    A["App defines the contract<br/>(prompt + Zod schema)"] --> B["Single adapter (Vercel AI SDK)"]
+    B --> C1["Claude — native tool use"]
+    B --> C2["GPT — structured outputs"]
+    B --> C3["Gemini — response schema"]
+    C1 --> D{"Validate against<br/>the Zod schema"}
+    C2 --> D
+    C3 --> D
+    D -->|"invalid"| E["Retry — max 3<br/>re-inject the validation error"]
+    E --> B
+    D -->|"valid"| F["Structurally identical data"]
+    F --> G[("Database")]
+    F --> H["Board UI"]
+    F --> I["Google Calendar"]`,
+        },
+      ],
+      schemaDiagrams: [
+        {
+          key: "main",
+          mermaid: `erDiagram
+    User ||--o| Assistant : has
+    User ||--o{ Workspace : owns
+    User ||--o{ Note : writes
+    User ||--o{ ApiKey : configures
+    User ||--o| GoogleAccount : connects
+    Workspace ||--o{ Task : contains
+    Workspace ||--o{ Sprint : contains
+    Workspace ||--o{ Note : groups
+    Sprint ||--o{ Task : groups
+    Task ||--o{ Subtask : "breaks down"
+    Task ||--o| CalendarEvent : syncs
+    Sprint ||--o| CalendarEvent : syncs
+    Note ||--o| CalendarEvent : syncs
+
+    User {
+        string id PK
+        string email UK
+        string firstName
+        string lastName
+        string defaultProvider
+    }
+    Task {
+        string id PK
+        string title
+        string description
+        int weight
+        enum status
+        boolean aiGenerated
+        int position
+        datetime dueDate
+    }
+    Subtask {
+        string id PK
+        string title
+        string note
+        int weight
+        boolean done
+    }
+    CalendarEvent {
+        string id PK
+        string googleEventId UK
+        datetime startsAt
+        boolean synced
+    }`,
+        },
+      ],
+      gettingStarted: {
+        steps: [
+          {
+            key: "install",
+            commands: `git clone https://github.com/cris185/cho-planner.git
+cd cho-planner
+npm install`,
+          },
+          {
+            key: "env",
+            commands: `cp .env.example .env`,
+            env: `DATABASE_URL=postgresql://taskmanager:taskmanager@localhost:5433/taskmanager
+
+AUTH_SECRET=                  # openssl rand -base64 32
+AUTH_URL=http://localhost:3000
+
+ENCRYPTION_KEY=                # node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+GOOGLE_CLIENT_ID=              # optional — Google Calendar
+GOOGLE_CLIENT_SECRET=
+
+DEFAULT_LLM_PROVIDER=          # optional — default demo LLM
+DEFAULT_LLM_API_KEY=`,
+          },
+          {
+            key: "db",
+            commands: `docker compose up -d`,
+          },
+          {
+            key: "schema",
+            commands: `npx prisma migrate dev      # creates the tables
+npm run db:seed             # loads a sample workspace (optional)`,
+          },
+          {
+            key: "dev",
+            commands: `npm run dev`,
+          },
+        ],
+      },
+    },
+  },
+  {
     id: "chohealth",
     gradient:
       "linear-gradient(155deg, var(--chohealth-1), var(--chohealth-2) 60%, var(--chohealth-3))",
@@ -575,220 +789,6 @@ npm run dev`,
             env: `NEXT_PUBLIC_API_URL=http://localhost:8000/api
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
-          },
-        ],
-      },
-    },
-  },
-  {
-    id: "choplanner",
-    gradient:
-      "linear-gradient(200deg, var(--choplanner-1), var(--choplanner-2) 65%, var(--choplanner-3))",
-    glow: "var(--choplanner-2)",
-    href: "https://cho-planner.cristianpuentes.com",
-    repo: "https://github.com/cris185/cho-planner",
-    coverImage: "https://minio-api.cristianpuentes.com/portfolio-media/covers/choplanner-card.jpg",
-    screenshots: [
-      { label: "Board", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/choplanner-board.jpg" },
-      { label: "Assistant", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/choplanner-settings.jpg" },
-      { label: "Task detail", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/choplanner-task.jpg" },
-      { label: "Notes", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/choplanner-notes.jpg" },
-    ],
-    mode: "light",
-    heroBg: "#1c1740",
-    bodyBg: "#f3f1fc",
-    textPrimary: "#241c52",
-    textSecondary: "#5b5480",
-    accentText: "#534ab7",
-    pillBg: "#534ab70f",
-    pillBorder: "#534ab72a",
-    techStack: ["Next.js 16", "React 19", "Prisma", "NextAuth", "Vercel AI SDK", "Google Calendar API"],
-    hasProblem: true,
-    demoAccounts: {
-      accounts: [{ label: "Demo", identifierLabel: "Email", identifier: "demo@choplanner.local", password: "demo1234" }],
-    },
-    docs: {
-      fullStack: [
-        { layer: "Next.js 16 (App Router)", tech: "React 19, TypeScript — framework and typing" },
-        { layer: "Tailwind CSS 4", tech: "Mobile-first responsive styling" },
-        { layer: "shadcn/ui + Radix UI", tech: "Accessible, headless component primitives" },
-        { layer: "dnd-kit", tech: "Drag and drop with touch sensors" },
-        { layer: "next-themes", tech: "Light/dark mode without flicker" },
-        { layer: "DiceBear", tech: "Assistant avatar generation" },
-        { layer: "react-markdown + remark-gfm", tech: "Markdown rendering for notes" },
-        { layer: "PWA", tech: "Web App Manifest + service worker, installable with offline support" },
-        { layer: "Server Actions", tech: "CRUD for all entities" },
-        { layer: "Route Handlers", tech: "Chat streaming, Google OAuth callback, sync" },
-        { layer: "Prisma 6", tech: "ORM" },
-        { layer: "PostgreSQL 17", tech: "Database" },
-        { layer: "Auth.js (NextAuth v5)", tech: "Credentials-based authentication" },
-        { layer: "bcryptjs", tech: "Password hashing" },
-        { layer: "Vercel AI SDK", tech: "Single multi-provider adapter (Claude, GPT, Gemini)" },
-        { layer: "Zod", tech: "Structured-output contract and validation" },
-        { layer: "googleapis", tech: "OAuth 2.0 with incremental syncToken" },
-        { layer: "AES-256-GCM", tech: "Encryption of API keys and refresh tokens at rest" },
-        { layer: "Docker Compose", tech: "Local Postgres for development" },
-      ],
-      architectureDiagram: `flowchart LR
-    subgraph instance["Your instance — works with nothing external"]
-        NEXT["Next.js<br/>UI + API (RSC, Server Actions)"]
-        DB[("PostgreSQL<br/>your data")]
-        VAULT["Credentials vault<br/>API keys + refresh tokens<br/>AES-256-GCM, never leave the instance"]
-        NEXT --> DB
-        NEXT --> VAULT
-    end
-
-    GCAL[["Google Calendar<br/>optional · OAuth 2.0"]]
-    LLM[["LLM provider<br/>optional · your key<br/>Claude / GPT / Gemini"]]
-
-    instance -.->|"optional"| GCAL
-    instance -.->|"optional"| LLM`,
-      architectureTree: [
-        {
-          name: "cho-planner/",
-          children: [
-            {
-              name: "prisma/",
-              children: [
-                { name: "schema.prisma", comment: "10 models + TaskStatus enum" },
-                { name: "seed.ts", comment: "sample data (demo user)" },
-              ],
-            },
-            {
-              name: "src/",
-              children: [
-                {
-                  name: "app/",
-                  children: [
-                    { name: "(auth)/", comment: "login and registration" },
-                    { name: "(dashboard)/", comment: "board, sprints, notes, chat, settings" },
-                    { name: "api/", comment: "chat (streaming), google (OAuth), calendar (sync)" },
-                  ],
-                },
-                { name: "components/", comment: "ui, board, chat, assistant, note" },
-                {
-                  name: "lib/",
-                  children: [
-                    { name: "crypto.ts", comment: "AES-256-GCM encrypt/decrypt" },
-                    { name: "ai/", comment: "registry, schemas (Zod), generate, provider" },
-                    { name: "google/", comment: "oauth, calendar" },
-                  ],
-                },
-                { name: "server/actions/", comment: "Server Actions (CRUD per entity)" },
-                { name: "validations/", comment: "input schemas" },
-              ],
-            },
-            { name: "docker-compose.yml", comment: "local Postgres" },
-            { name: ".env.example", comment: "variables template (no secrets)" },
-            { name: "package.json" },
-          ],
-        },
-      ],
-      dataFlows: [
-        {
-          key: "aiGeneration",
-          mermaid: `flowchart TD
-    A["App defines the contract<br/>(prompt + Zod schema)"] --> B["Single adapter (Vercel AI SDK)"]
-    B --> C1["Claude — native tool use"]
-    B --> C2["GPT — structured outputs"]
-    B --> C3["Gemini — response schema"]
-    C1 --> D{"Validate against<br/>the Zod schema"}
-    C2 --> D
-    C3 --> D
-    D -->|"invalid"| E["Retry — max 3<br/>re-inject the validation error"]
-    E --> B
-    D -->|"valid"| F["Structurally identical data"]
-    F --> G[("Database")]
-    F --> H["Board UI"]
-    F --> I["Google Calendar"]`,
-        },
-      ],
-      schemaDiagrams: [
-        {
-          key: "main",
-          mermaid: `erDiagram
-    User ||--o| Assistant : has
-    User ||--o{ Workspace : owns
-    User ||--o{ Note : writes
-    User ||--o{ ApiKey : configures
-    User ||--o| GoogleAccount : connects
-    Workspace ||--o{ Task : contains
-    Workspace ||--o{ Sprint : contains
-    Workspace ||--o{ Note : groups
-    Sprint ||--o{ Task : groups
-    Task ||--o{ Subtask : "breaks down"
-    Task ||--o| CalendarEvent : syncs
-    Sprint ||--o| CalendarEvent : syncs
-    Note ||--o| CalendarEvent : syncs
-
-    User {
-        string id PK
-        string email UK
-        string firstName
-        string lastName
-        string defaultProvider
-    }
-    Task {
-        string id PK
-        string title
-        string description
-        int weight
-        enum status
-        boolean aiGenerated
-        int position
-        datetime dueDate
-    }
-    Subtask {
-        string id PK
-        string title
-        string note
-        int weight
-        boolean done
-    }
-    CalendarEvent {
-        string id PK
-        string googleEventId UK
-        datetime startsAt
-        boolean synced
-    }`,
-        },
-      ],
-      gettingStarted: {
-        steps: [
-          {
-            key: "install",
-            commands: `git clone https://github.com/cris185/cho-planner.git
-cd cho-planner
-npm install`,
-          },
-          {
-            key: "env",
-            commands: `cp .env.example .env`,
-            env: `DATABASE_URL=postgresql://taskmanager:taskmanager@localhost:5433/taskmanager
-
-AUTH_SECRET=                  # openssl rand -base64 32
-AUTH_URL=http://localhost:3000
-
-ENCRYPTION_KEY=                # node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-
-GOOGLE_CLIENT_ID=              # optional — Google Calendar
-GOOGLE_CLIENT_SECRET=
-
-DEFAULT_LLM_PROVIDER=          # optional — default demo LLM
-DEFAULT_LLM_API_KEY=`,
-          },
-          {
-            key: "db",
-            commands: `docker compose up -d`,
-          },
-          {
-            key: "schema",
-            commands: `npx prisma migrate dev      # creates the tables
-npm run db:seed             # loads a sample workspace (optional)`,
-          },
-          {
-            key: "dev",
-            commands: `npm run dev`,
           },
         ],
       },
