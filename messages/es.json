@@ -44,7 +44,20 @@
         "Flujo de consulta atómico — diagnóstico, prescripciones y órdenes de laboratorio se crean juntos o no se crean",
         "Facturas, prescripciones y órdenes de laboratorio generadas como PDFs reales con ReportLab",
         "Códigos QR de recogida, correos transaccionales con SendGrid, y soporte completo en inglés/español"
-      ]
+      ],
+      "engineering": {
+        "decisions": [
+          { "title": "Los conflictos de reserva se previenen a nivel de base de datos, no solo en la lógica de la vista", "rationale": "Un constraint único condicional sobre (doctor, fecha) es la última línea de defensa contra una condición de carrera donde dos pacientes pagan por el mismo cupo con milisegundos de diferencia. Las validaciones a nivel de app dan un error rápido y amigable; el constraint es lo que realmente garantiza correctitud bajo concurrencia." },
+          { "title": "Un Invoice polimórfico usando dos campos one-to-one anulables más un CheckConstraint, en vez de una foreign key genérica", "rationale": "Mantiene integridad referencial y joins SQL normales en Invoice.appointment / Invoice.medicine_order, mientras que un check a nivel de base de datos hace estructuralmente imposible facturar ambos — o ninguno — desde la misma factura, incluso si una vista futura tiene un bug." },
+          { "title": "El rol se guarda en el usuario, pero nunca se confía en él solo para autorización", "rationale": "Permisos personalizados verifican el rol Y que el perfil relacionado realmente exista. Un usuario que reclama un rol sin un perfil correspondiente no está autorizado — cerrando un hueco que una verificación de rol ingenua dejaría abierto." },
+          { "title": "Rating del doctor desnormalizado, sincronizado vía signals", "rationale": "El listado/búsqueda de doctores es una ruta de lectura muy frecuente; recalcular un promedio en cada request no escala a medida que crecen las reseñas, así que un signal post_save/post_delete en Review recalcula y persiste el agregado en su lugar." },
+          { "title": "Un solo webhook de Stripe compartido para citas y pedidos de farmacia, enrutado por metadata", "rationale": "Evita duplicar la verificación de firma y el manejo de eventos para dos tipos de entidad facturable — el modelo de invoice/payment ya los trata de forma polimórfica, así que el webhook refleja eso." }
+        ],
+        "limitations": [
+          "El tracking de entregas es simulado, no real — no hay integración con transportadora ni webhook. La etapa de cada pedido se calcula por tiempo transcurrido desde el pago, no por un evento del mundo real.",
+          "La disponibilidad semanal de un doctor solo se puede crear o editar desde el admin de Django — todavía no hay un endpoint de autoservicio para \"gestionar mi disponibilidad\"."
+        ]
+      }
     },
     "choplanner": {
       "name": "CHO Planner",
@@ -91,10 +104,16 @@
   "projectPage": {
     "back": "Expulsar cartucho",
     "visitLive": "Ver sitio en vivo",
+    "viewRepo": "Ver en GitHub",
     "techStack": "Stack tecnológico",
     "featuresTitle": "Qué hace",
     "demoAccount": "Cuenta demo",
-    "demoNote": "Demo pública — siéntete libre de entrar y explorar."
+    "demoNote": "Demo pública — siéntete libre de entrar y explorar.",
+    "engineeringMode": "Modo Ingeniería",
+    "engineeringModeOff": "Mostrar la ingeniería",
+    "keyDecisions": "Decisiones clave",
+    "knownLimitations": "Limitaciones conocidas",
+    "fullStackTitle": "Stack completo"
   },
   "professional": {
     "sectionLabel": "Experiencia Profesional",

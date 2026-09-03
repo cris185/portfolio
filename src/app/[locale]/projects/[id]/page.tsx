@@ -5,6 +5,8 @@ import { Link } from "@/i18n/navigation";
 import { getProject, projects, type ProjectId } from "@/lib/projects";
 import BackLink from "@/components/BackLink";
 import ProjectGallery from "@/components/ProjectGallery";
+import EngineeringMode from "@/components/EngineeringMode";
+import { GithubIcon } from "@/components/icons";
 
 export function generateStaticParams() {
   return projects.map((p) => ({ id: p.id }));
@@ -109,16 +111,28 @@ export default async function ProjectDetailPage({
             ))}
           </div>
 
-          <a
-            href={project.href}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded font-mono text-sm font-medium"
-            style={{ background: project.accentText, color: isDark ? "#0a0a0c" : "#ffffff", padding: "12px 22px" }}
-          >
-            {t("visitLive")}
-            <ArrowUpRight size={15} />
-          </a>
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href={project.href}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded font-mono text-sm font-medium"
+              style={{ background: project.accentText, color: isDark ? "#0a0a0c" : "#ffffff", padding: "12px 22px" }}
+            >
+              {t("visitLive")}
+              <ArrowUpRight size={15} />
+            </a>
+            <a
+              href={project.repo}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded font-mono text-sm font-medium"
+              style={{ border: `1px solid ${project.pillBorder}`, color: project.textPrimary, padding: "12px 22px" }}
+            >
+              <GithubIcon width={15} height={15} />
+              {t("viewRepo")}
+            </a>
+          </div>
         </div>
 
         {/* preview panel */}
@@ -194,6 +208,18 @@ export default async function ProjectDetailPage({
             ))}
           </ul>
         </div>
+
+        {project.engineering && (
+          <EngineeringMode
+            projectId={project.id}
+            engineering={project.engineering}
+            accentText={project.accentText}
+            textPrimary={project.textPrimary}
+            textSecondary={project.textSecondary}
+            pillBorder={project.pillBorder}
+            pillBg={project.pillBg}
+          />
+        )}
 
         {project.demoAccounts && (
           <div className="mt-14 max-w-xl">

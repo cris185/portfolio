@@ -44,7 +44,20 @@
         "Atomic consultation flow — diagnosis, prescriptions and lab orders are created together or not at all",
         "Invoices, prescriptions and lab orders generated as real PDF documents with ReportLab",
         "QR pickup codes, SendGrid transactional email, and full English/Spanish support"
-      ]
+      ],
+      "engineering": {
+        "decisions": [
+          { "title": "Booking conflicts are prevented at the database layer, not just in view logic", "rationale": "A conditional unique constraint on (doctor, date) is the last line of defense against a race condition where two patients pay for the same slot within milliseconds of each other. App-level checks give a fast, friendly error; the constraint is what actually guarantees correctness under concurrency." },
+          { "title": "A polymorphic Invoice via two nullable one-to-one fields plus a CheckConstraint, instead of a generic foreign key", "rationale": "Keeps referential integrity and normal SQL joins on Invoice.appointment / Invoice.medicine_order, while a database-level XOR check makes it structurally impossible to bill both — or neither — from the same invoice, even if a future view has a bug." },
+          { "title": "Role is stored on the user, but never trusted alone for authorization", "rationale": "Custom permissions check the role and that the related profile object actually exists. A user who claims a role without a matching profile is not authorized — closing a gap a naive role check would leave open." },
+          { "title": "Denormalized doctor rating, kept in sync via signals", "rationale": "The doctor list/search is a hot read path; recomputing an average on every request doesn't scale as reviews grow, so a post_save/post_delete signal on Review recalculates and persists the aggregate instead." },
+          { "title": "One shared Stripe webhook for both appointments and pharmacy orders, routed by metadata", "rationale": "Avoids duplicating signature verification and event handling for two billable entity types — the invoice/payment model already treats them polymorphically, so the webhook mirrors that." }
+        ],
+        "limitations": [
+          "Delivery tracking is simulated, not real — there's no courier integration or webhook. Each order's stage is computed from elapsed time since payment, not from a real-world event.",
+          "A doctor's weekly availability can currently only be created or edited through the Django admin — there's no self-service \"manage my availability\" endpoint yet."
+        ]
+      }
     },
     "choplanner": {
       "name": "CHO Planner",
@@ -91,10 +104,16 @@
   "projectPage": {
     "back": "Eject cartridge",
     "visitLive": "Visit live site",
+    "viewRepo": "View on GitHub",
     "techStack": "Tech stack",
     "featuresTitle": "What it does",
     "demoAccount": "Demo account",
-    "demoNote": "Public demo — feel free to log in and click around."
+    "demoNote": "Public demo — feel free to log in and click around.",
+    "engineeringMode": "Engineering Mode",
+    "engineeringModeOff": "Show me the engineering",
+    "keyDecisions": "Key decisions",
+    "knownLimitations": "Known limitations",
+    "fullStackTitle": "Full stack"
   },
   "professional": {
     "sectionLabel": "Professional Builds",

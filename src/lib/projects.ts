@@ -5,6 +5,7 @@ export interface Project {
   gradient: string;
   glow: string;
   href: string;
+  repo: string;
   /** Card thumbnail (portrait), served from MinIO */
   coverImage?: string;
   /** Gallery of wide screenshots for the detail page, served from MinIO */
@@ -23,6 +24,10 @@ export interface Project {
   hasProblem: boolean;
   hasStats?: boolean;
   demoAccounts?: { label: string; email: string; password: string }[];
+  /** Engineering Mode: deeper technical content pulled from the project's own README */
+  engineering?: {
+    fullStack: { layer: string; tech: string }[];
+  };
 }
 
 export const projects: Project[] = [
@@ -32,6 +37,7 @@ export const projects: Project[] = [
       "linear-gradient(165deg, var(--sevenlever-1), var(--sevenlever-2) 60%, var(--sevenlever-3))",
     glow: "var(--sevenlever-gold)",
     href: "https://seven-lever.cristianpuentes.com",
+    repo: "https://github.com/cris185/seven-lever",
     mode: "dark",
     heroBg: "#0f0d1a",
     bodyBg: "#16213e",
@@ -49,6 +55,7 @@ export const projects: Project[] = [
       "linear-gradient(155deg, var(--chohealth-1), var(--chohealth-2) 60%, var(--chohealth-3))",
     glow: "var(--chohealth-2)",
     href: "https://chohealth.cristianpuentes.com",
+    repo: "https://github.com/cris185/CHOHEALTH",
     coverImage: "https://minio-api.cristianpuentes.com/portfolio-media/covers/chohealth-card.jpg",
     screenshots: [
       { label: "Services", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/chohealth-services.jpg" },
@@ -71,6 +78,20 @@ export const projects: Project[] = [
       { label: "Doctor", email: "elena.rodriguez@chohealth.test", password: "Demo1234!" },
       { label: "Patient", email: "patient@example.com", password: "Demo1234!" },
     ],
+    engineering: {
+      fullStack: [
+        { layer: "Backend", tech: "Django 6, Django REST Framework, SimpleJWT" },
+        { layer: "Database", tech: "PostgreSQL — self-hosted on my own VPS" },
+        { layer: "Media storage", tech: "MinIO (self-hosted, S3-compatible)" },
+        { layer: "Admin UI", tech: "Django Jazzmin" },
+        { layer: "Payments", tech: "Stripe (Checkout, Setup Intents, webhooks), PayPal (Orders API)" },
+        { layer: "Email", tech: "SendGrid" },
+        { layer: "Frontend", tech: "Next.js 16 (App Router), React 19, TypeScript" },
+        { layer: "UI", tech: "shadcn/ui, Tailwind CSS v4, Framer Motion" },
+        { layer: "i18n", tech: "next-intl (English / Spanish)" },
+        { layer: "Deployment", tech: "Docker + Coolify, self-hosted VPS" },
+      ],
+    },
   },
   {
     id: "choplanner",
@@ -78,6 +99,7 @@ export const projects: Project[] = [
       "linear-gradient(200deg, var(--choplanner-1), var(--choplanner-2) 65%, var(--choplanner-3))",
     glow: "var(--choplanner-2)",
     href: "https://cho-planner.cristianpuentes.com",
+    repo: "https://github.com/cris185/cho-planner",
     mode: "light",
     heroBg: "#1c1740",
     bodyBg: "#f3f1fc",
@@ -96,6 +118,7 @@ export const projects: Project[] = [
       "linear-gradient(200deg, var(--neurostock-1), var(--neurostock-2) 70%, var(--neurostock-3))",
     glow: "var(--neurostock-3)",
     href: "https://neurostock.cristianpuentes.com",
+    repo: "https://github.com/cris185/NeuroStock",
     mode: "dark",
     heroBg: "#071522",
     bodyBg: "#0f2136",
