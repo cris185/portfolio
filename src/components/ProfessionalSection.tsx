@@ -11,8 +11,8 @@ export default async function ProfessionalSection() {
     glow: w.glow,
     coverImage: w.coverImage,
     locked: w.locked,
-    badge: w.locked ? t("pendingApproval") : t("openLabel"),
-    badgeColor: w.locked ? "#d9a441" : "#1d4ed8",
+    badge: w.locked ? t("pendingApproval") : undefined,
+    badgeColor: w.locked ? "#d9a441" : undefined,
   }));
 
   return (

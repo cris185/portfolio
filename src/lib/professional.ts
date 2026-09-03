@@ -12,7 +12,7 @@ export type ProfessionalWork = Omit<Project, "id"> & {
 export const professionalWorks: ProfessionalWork[] = [
   {
     id: "dashboardanalytics",
-    locked: true,
+    locked: false,
     gradient: "linear-gradient(165deg, #101013, #16323b 85%)",
     glow: "#8fc4d8",
     href: "",
@@ -25,7 +25,7 @@ export const professionalWorks: ProfessionalWork[] = [
     accentText: "#8fc4d8",
     pillBg: "#8fc4d814",
     pillBorder: "#8fc4d82e",
-    techStack: [],
+    techStack: ["Next.js", "React", "Node.js", "PostgreSQL"],
     hasProblem: false,
   },
   {

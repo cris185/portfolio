@@ -641,9 +641,16 @@
     },
     "dashboardanalytics": {
       "name": "Dashboard Analytics",
+      "category": "Client Project — Spa/Wellness Management Platform",
       "tagline": "Scheduling, staff and reporting for a wellness business",
       "role": "Role — Full Stack Developer",
-      "description": "A dashboard-driven management system for a spa/wellness business — appointment scheduling, staff management, and day-to-day operational reporting in one place. Full-stack development across the platform, from the API layer to the UI."
+      "description": "A dashboard-driven management system for a spa/wellness business — appointment scheduling, staff management, and day-to-day operational reporting in one place. Full-stack development across the platform, from the API layer to the UI.",
+      "features": [
+        "Conflict-aware appointment scheduling across staff and rooms",
+        "Staff and role management with permission-based access control",
+        "Operational reporting dashboards — bookings, revenue, and day-to-day metrics",
+        "Contributed across the stack, from API design to the UI"
+      ]
     }
   }
 }

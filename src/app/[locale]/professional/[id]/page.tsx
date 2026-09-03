@@ -24,8 +24,10 @@ export default async function ProfessionalDetailPage({
   const tp = await getTranslations(`professional.${work.id}`);
 
   const isDark = work.mode === "dark";
-  const teammates = tp.raw("teammates") as string[];
-  const advisors = tp.raw("advisors") as string[];
+  const hasAcademicCredit = tp.has("university");
+  const teammates = hasAcademicCredit ? (tp.raw("teammates") as string[]) : [];
+  const advisors = hasAcademicCredit ? (tp.raw("advisors") as string[]) : [];
+  const isThesis = work.id === "thesis";
 
   return (
     <main style={{ background: work.bodyBg }} className="min-h-screen">
@@ -103,38 +105,44 @@ export default async function ProfessionalDetailPage({
             ))}
           </div>
 
-          {/* university / authorship credit */}
-          <div
-            className="mb-9 flex flex-wrap items-center gap-4 rounded-lg px-4 py-3"
-            style={{ background: work.pillBg, border: `1px solid ${work.pillBorder}` }}
-          >
-            <Image src="/utb-logo.png" alt={tp("university")} width={37} height={18} className="shrink-0" />
-            <div className="text-[12.5px] leading-relaxed" style={{ color: work.textSecondary }}>
-              <span style={{ color: work.textPrimary }}>{tp("university")}</span>
-              {" · "}
-              {tp("period")}
-              <br />
-              {t("withTeammates")} {teammates.join(", ")}
-              {" — "}
-              {t("advisedBy")} {advisors.join(", ")}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              href={work.href}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded font-mono text-sm font-medium"
-              style={{ background: work.accentText, color: isDark ? "#0a0a0c" : "#ffffff", padding: "12px 22px" }}
+          {/* university / authorship credit — thesis only */}
+          {hasAcademicCredit && (
+            <div
+              className="mb-9 flex flex-wrap items-center gap-4 rounded-lg px-4 py-3"
+              style={{ background: work.pillBg, border: `1px solid ${work.pillBorder}` }}
             >
-              {t("viewCatalog")}
-              <ArrowUpRight size={15} />
-            </a>
-          </div>
-          <p className="mt-3 text-[11.5px]" style={{ color: work.textSecondary }}>
-            {t("sourcePrivateNote")}
-          </p>
+              <Image src="/utb-logo.png" alt={tp("university")} width={37} height={18} className="shrink-0" />
+              <div className="text-[12.5px] leading-relaxed" style={{ color: work.textSecondary }}>
+                <span style={{ color: work.textPrimary }}>{tp("university")}</span>
+                {" · "}
+                {tp("period")}
+                <br />
+                {t("withTeammates")} {teammates.join(", ")}
+                {" — "}
+                {t("advisedBy")} {advisors.join(", ")}
+              </div>
+            </div>
+          )}
+
+          {work.href && (
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href={work.href}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded font-mono text-sm font-medium"
+                style={{ background: work.accentText, color: isDark ? "#0a0a0c" : "#ffffff", padding: "12px 22px" }}
+              >
+                {isThesis ? t("viewCatalog") : t("visitLive")}
+                <ArrowUpRight size={15} />
+              </a>
+            </div>
+          )}
+          {isThesis && (
+            <p className="mt-3 text-[11.5px]" style={{ color: work.textSecondary }}>
+              {t("sourcePrivateNote")}
+            </p>
+          )}
         </div>
 
         {work.hasProblem && (

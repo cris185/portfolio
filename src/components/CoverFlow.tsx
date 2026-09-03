@@ -98,10 +98,16 @@ export default function CoverFlow({
     [items, storageKey, showMoreSoon]
   );
 
+  const [lockedShakeId, setLockedShakeId] = useState<string | null>(null);
+
   const openActive = useCallback(() => {
     if (active >= items.length) return; // "more soon" ghost slot
     const item = items[active];
-    if (item.locked) return;
+    if (item.locked) {
+      setLockedShakeId(item.id);
+      window.setTimeout(() => setLockedShakeId(null), 420);
+      return;
+    }
     navigate(`${basePath}/${item.id}`, item.glow);
   }, [active, items, basePath, navigate]);
 
@@ -175,6 +181,11 @@ export default function CoverFlow({
               animate={{ x: s.x, rotateY: s.rotateY, scale: s.scale, opacity: s.opacity, zIndex: s.zIndex }}
               transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
             >
+              <motion.div
+                className="absolute inset-0"
+                animate={lockedShakeId === item.id && !reduceMotion ? { x: [0, -7, 7, -5, 5, 0] } : { x: 0 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+              >
               {item.coverImage ? (
                 <NextImage src={item.coverImage} alt={tp(`${item.id}.name`)} fill className="object-cover" sizes="300px" />
               ) : (
@@ -211,6 +222,7 @@ export default function CoverFlow({
                   <div className="mt-1 font-mono text-[10px] leading-snug text-white/60">{tp(`${item.id}.tagline`)}</div>
                 )}
               </div>
+              </motion.div>
             </motion.button>
           );
         })}

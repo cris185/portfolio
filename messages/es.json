@@ -641,9 +641,16 @@
     },
     "dashboardanalytics": {
       "name": "Dashboard Analytics",
+      "category": "Proyecto para Cliente — Plataforma de Gestión Spa/Bienestar",
       "tagline": "Agenda, personal y reportes para un negocio de bienestar",
       "role": "Rol — Full Stack Developer",
-      "description": "Un sistema de gestión basado en dashboards para un negocio de spa/bienestar — agenda de citas, gestión de personal, y reportes operativos del día a día en un solo lugar. Desarrollo full-stack en toda la plataforma, desde la capa de API hasta la UI."
+      "description": "Un sistema de gestión basado en dashboards para un negocio de spa/bienestar — agenda de citas, gestión de personal, y reportes operativos del día a día en un solo lugar. Desarrollo full-stack en toda la plataforma, desde la capa de API hasta la UI.",
+      "features": [
+        "Agenda de citas con detección de conflictos entre personal y salas",
+        "Gestión de personal y roles con control de acceso por permisos",
+        "Dashboards de reportes operativos — reservas, ingresos y métricas del día a día",
+        "Contribución en toda la pila, desde el diseño de la API hasta la UI"
+      ]
     }
   }
 }
