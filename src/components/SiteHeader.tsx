@@ -23,7 +23,7 @@ export default function SiteHeader() {
           {t("projects")}
         </Link>
         <Link
-          href="/professional"
+          href="/#professional"
           className="hidden font-mono text-xs uppercase tracking-[0.08em] text-muted transition-colors hover:text-foreground sm:inline"
         >
           {t("professional")}

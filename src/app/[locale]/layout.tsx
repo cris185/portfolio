@@ -4,6 +4,7 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
+import TransitionProvider from "@/components/TransitionProvider";
 import "../globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -58,7 +59,9 @@ export default async function LocaleLayout({
       <body
         className={`${spaceGrotesk.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable} antialiased`}
       >
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <TransitionProvider>{children}</TransitionProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

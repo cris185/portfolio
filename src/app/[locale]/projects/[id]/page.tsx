@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { getProject, projects, type ProjectId } from "@/lib/projects";
+import BackLink from "@/components/BackLink";
 
 export function generateStaticParams() {
   return projects.map((p) => ({ id: p.id }));
@@ -47,13 +48,7 @@ export default async function ProjectDetailPage({
               CP<span style={{ color: "#d9a441" }}>.</span>
             </Link>
             <div className="h-4 w-px bg-white/20" />
-            <Link
-              href="/"
-              className="flex items-center gap-2 font-mono text-xs text-white/60 transition-colors hover:text-white/90"
-            >
-              <ArrowLeft size={13} />
-              {t("back")}
-            </Link>
+            <BackLink color={project.glow} />
           </div>
         </div>
 

@@ -66,6 +66,22 @@
     "sub": "Client & employer code stays with them — here's what I can share.",
     "pendingApproval": "Pending approval",
     "openLabel": "Open — paper linked",
-    "footerNote": "Descriptions are always mine to share — images and links go up as approvals come in."
+    "footerNote": "Descriptions are always mine to share — images and links go up as approvals come in.",
+    "readPaper": "Read the paper",
+    "thesis": {
+      "name": "Undergraduate Thesis",
+      "role": "Published research project",
+      "description": "Full write-up, screenshots and a link to the published article — nothing held back on this one."
+    },
+    "verifylead": {
+      "name": "Verify Lead",
+      "role": "Role — Backend Developer",
+      "description": "Lead qualification platform used by a 40+ person sales team — API, data pipeline and verification logic. Screenshots and a live link are on the way, pending sign-off."
+    },
+    "dashboardanalytics": {
+      "name": "Dashboard Analytics",
+      "role": "Role — Full Stack Developer",
+      "description": "Management system for a spa/wellness business — scheduling, staff and reporting in one dashboard."
+    }
   }
 }

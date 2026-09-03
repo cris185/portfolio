@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { useCoverTransition } from "@/components/TransitionProvider";
 import { projects } from "@/lib/projects";
 
 const SPACING = 350;
@@ -22,22 +22,19 @@ function slotStyle(offset: number, reduceMotion: boolean) {
 export default function CoverFlow() {
   const t = useTranslations("home");
   const tp = useTranslations("projects");
-  const router = useRouter();
+  const { navigate } = useCoverTransition();
   const reduceMotion = useReducedMotion() ?? false;
   const [active, setActive] = useState(1); // CHOHEALTH featured by default
 
   const select = useCallback((index: number) => {
-    setActive((prev) => {
-      const clamped = Math.max(0, Math.min(projects.length, index));
-      return clamped;
-    });
+    setActive(() => Math.max(0, Math.min(projects.length, index)));
   }, []);
 
   const openActive = useCallback(() => {
     if (active >= projects.length) return; // "more soon" ghost slot
     const project = projects[active];
-    router.push(`/projects/${project.id}`);
-  }, [active, router]);
+    navigate(`/projects/${project.id}`, project.glow);
+  }, [active, navigate]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

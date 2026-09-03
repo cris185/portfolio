@@ -66,6 +66,22 @@
     "sub": "El código de clientes y empleadores se queda con ellos — esto es lo que sí puedo compartir.",
     "pendingApproval": "Pendiente de aprobación",
     "openLabel": "Abierto — artículo enlazado",
-    "footerNote": "Las descripciones siempre son mías para compartir — imágenes y links se suben a medida que llegan las aprobaciones."
+    "footerNote": "Las descripciones siempre son mías para compartir — imágenes y links se suben a medida que llegan las aprobaciones.",
+    "readPaper": "Leer el artículo",
+    "thesis": {
+      "name": "Proyecto de Grado",
+      "role": "Investigación publicada",
+      "description": "Descripción completa, capturas y un link al artículo publicado — nada se queda por fuera en este."
+    },
+    "verifylead": {
+      "name": "Verify Lead",
+      "role": "Rol — Backend Developer",
+      "description": "Plataforma de calificación de leads usada por un equipo de ventas de más de 40 personas — API, pipeline de datos y lógica de verificación. Capturas y un link en vivo vienen en camino, pendiente de aprobación."
+    },
+    "dashboardanalytics": {
+      "name": "Dashboard Analytics",
+      "role": "Rol — Full Stack Developer",
+      "description": "Sistema de gestión para un negocio de spa/bienestar — agenda, personal y reportes en un solo dashboard."
+    }
   }
 }
