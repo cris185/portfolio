@@ -662,6 +662,34 @@
         "Operational reporting dashboards — bookings, revenue, and day-to-day metrics",
         "Contributed across the stack, from API design to the UI"
       ]
+    },
+    "ranktitan": {
+      "name": "RankTitan.ai",
+      "category": "Client Project — AI Local SEO & Reputation Platform",
+      "tagline": "AI-powered local SEO and Google Maps ranking platform",
+      "role": "Role — Full Stack Developer",
+      "description": "A local-SEO SaaS that helps businesses win Google Maps visibility — street-level rank tracking, AI-drafted review replies, and one-click management of Google Business Profiles across locations. Full-stack development across the platform.",
+      "features": [
+        "Street-by-street rank tracking via color-coded geo-grid heat maps",
+        "AI-drafted review replies in any language, automatic or with manual approval",
+        "One-click Google Business Profile management — services, hours, posts, Q&As",
+        "Competitive analysis flagging weak zones and zones worth protecting",
+        "Automated ranking reports for agencies managing multiple client accounts"
+      ]
+    },
+    "platformconnection": {
+      "name": "Platform Connection",
+      "category": "Client Project — AI Customer Service Platform",
+      "tagline": "AI chatbot and appointment automation for customer service teams",
+      "role": "Role — Full Stack Developer",
+      "description": "A no-code AI chatbot platform for customer service — multilingual conversations, appointment scheduling, and 24/7 support across messaging channels, with hand-off to a human agent when a conversation needs one. Full-stack development across the platform.",
+      "features": [
+        "Multilingual AI chatbot with human hand-off for complex queries",
+        "Appointment scheduling synced with Google and Microsoft calendars",
+        "Multi-channel messaging across WhatsApp, Meta, and SMS/voice",
+        "Lead capture with CSV export for sales follow-up",
+        "Real-time analytics on conversations, leads, and engagement"
+      ]
     }
   }
 }

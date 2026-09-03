@@ -1,6 +1,6 @@
 import type { Project } from "./projects";
 
-export type ProfessionalId = "thesis" | "verifylead" | "dashboardanalytics";
+export type ProfessionalId = "thesis" | "verifylead" | "dashboardanalytics" | "ranktitan" | "platformconnection";
 
 /** Reuses the exact same shape as a personal Project (and the same ProjectDocs component) — just under its own route and messages namespace. */
 export type ProfessionalWork = Omit<Project, "id"> & {
@@ -46,6 +46,44 @@ export const professionalWorks: ProfessionalWork[] = [
     pillBg: "#8b7edc14",
     pillBorder: "#8b7edc2e",
     techStack: ["Next.js", "Node.js / Express", "PostgreSQL (Prisma)", "Redis / BullMQ", "SendGrid", "Twilio", "PayArc"],
+    hasProblem: false,
+  },
+  {
+    id: "ranktitan",
+    locked: false,
+    gradient: "linear-gradient(165deg, #0c0529, #7c60f4 85%)",
+    glow: "#42b9f0",
+    coverImage: "https://minio-api.cristianpuentes.com/portfolio-media/covers/ranktitan-card.jpg",
+    href: "https://ranktitan.ai/",
+    repo: "",
+    mode: "dark",
+    heroBg: "#0c0529",
+    bodyBg: "#11073b",
+    textPrimary: "#f1f4fc",
+    textSecondary: "#8c81bc",
+    accentText: "#8871ea",
+    pillBg: "#8871ea14",
+    pillBorder: "#8871ea2e",
+    techStack: ["NestJS", "Next.js", "Prisma", "PostgreSQL", "Gemini", "Meta Graph API", "PayArc"],
+    hasProblem: false,
+  },
+  {
+    id: "platformconnection",
+    locked: false,
+    gradient: "linear-gradient(165deg, #04130f, #04d299 85%)",
+    glow: "#33a1ff",
+    coverImage: "https://minio-api.cristianpuentes.com/portfolio-media/covers/platformconnection-card.jpg",
+    href: "https://www.platformconnection.com/",
+    repo: "",
+    mode: "dark",
+    heroBg: "#04130f",
+    bodyBg: "#062019",
+    textPrimary: "#f1f4fc",
+    textSecondary: "#82b0a3",
+    accentText: "#77e4c6",
+    pillBg: "#77e4c614",
+    pillBorder: "#77e4c62e",
+    techStack: [],
     hasProblem: false,
   },
   {

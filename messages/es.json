@@ -662,6 +662,34 @@
         "Dashboards de reportes operativos — reservas, ingresos y métricas del día a día",
         "Contribución en toda la pila, desde el diseño de la API hasta la UI"
       ]
+    },
+    "ranktitan": {
+      "name": "RankTitan.ai",
+      "category": "Proyecto para Cliente — Plataforma de SEO Local y Reputación con IA",
+      "tagline": "Plataforma de SEO local y posicionamiento en Google Maps con IA",
+      "role": "Rol — Full Stack Developer",
+      "description": "Un SaaS de SEO local que ayuda a negocios a ganar visibilidad en Google Maps — seguimiento de ranking calle por calle, respuestas a reseñas redactadas por IA, y gestión de perfiles de Google Business con un clic en varias ubicaciones. Desarrollo full-stack en toda la plataforma.",
+      "features": [
+        "Seguimiento de ranking calle por calle con mapas de calor por zonas",
+        "Respuestas a reseñas redactadas por IA en cualquier idioma, automáticas o con aprobación manual",
+        "Gestión del perfil de Google Business con un clic — servicios, horarios, publicaciones, preguntas",
+        "Análisis competitivo que identifica zonas débiles y zonas a proteger",
+        "Reportes de ranking automatizados para agencias que gestionan varias cuentas de clientes"
+      ]
+    },
+    "platformconnection": {
+      "name": "Platform Connection",
+      "category": "Proyecto para Cliente — Plataforma de Atención al Cliente con IA",
+      "tagline": "Chatbot con IA y automatización de citas para equipos de atención al cliente",
+      "role": "Rol — Full Stack Developer",
+      "description": "Una plataforma de chatbot con IA sin código para atención al cliente — conversaciones multilingües, agendamiento de citas, y soporte 24/7 a través de canales de mensajería, con traspaso a un agente humano cuando la conversación lo requiere. Desarrollo full-stack en toda la plataforma.",
+      "features": [
+        "Chatbot con IA multilingüe con traspaso a un humano para consultas complejas",
+        "Agendamiento de citas sincronizado con Google y Microsoft Calendar",
+        "Mensajería multicanal por WhatsApp, Meta y SMS/voz",
+        "Captura de leads con exportación a CSV para el equipo de ventas",
+        "Analítica en tiempo real de conversaciones, leads y engagement"
+      ]
     }
   }
 }
