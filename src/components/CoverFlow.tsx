@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import NextImage from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { ImageIcon } from "lucide-react";
 import { useCoverTransition } from "@/components/TransitionProvider";
 import { projects } from "@/lib/projects";
 
@@ -100,17 +102,39 @@ export default function CoverFlow() {
               animate={{ x: s.x, rotateY: s.rotateY, scale: s.scale, opacity: s.opacity, zIndex: s.zIndex }}
               transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div
-                aria-hidden
-                className="absolute inset-0 opacity-20"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(#ffffff22 1px, transparent 1px), linear-gradient(90deg, #ffffff22 1px, transparent 1px)",
-                  backgroundSize: "24px 24px",
-                }}
-              />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-4 text-left font-mono text-xs tracking-wide text-white/90">
-                {tp(`${project.id}.name`).toUpperCase()}
+              {project.coverImage ? (
+                <NextImage
+                  src={project.coverImage}
+                  alt={tp(`${project.id}.name`)}
+                  fill
+                  className="object-cover"
+                  sizes="300px"
+                />
+              ) : (
+                <>
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 opacity-20"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(#ffffff22 1px, transparent 1px), linear-gradient(90deg, #ffffff22 1px, transparent 1px)",
+                      backgroundSize: "24px 24px",
+                    }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-15">
+                    <ImageIcon size={44} className="text-white" />
+                  </div>
+                </>
+              )}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 pt-10 text-left">
+                <div className="font-mono text-xs tracking-wide text-white/95">
+                  {tp(`${project.id}.name`).toUpperCase()}
+                </div>
+                {offset === 0 && (
+                  <div className="mt-1 font-mono text-[10px] leading-snug text-white/60">
+                    {tp(`${project.id}.tagline`)}
+                  </div>
+                )}
               </div>
             </motion.button>
           );

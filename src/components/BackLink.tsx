@@ -6,12 +6,12 @@ import { useCoverTransition } from "@/components/TransitionProvider";
 
 export default function BackLink({ color }: { color: string }) {
   const t = useTranslations("projectPage");
-  const { navigate } = useCoverTransition();
+  const { goBack } = useCoverTransition();
 
   return (
     <button
       type="button"
-      onClick={() => navigate("/", color)}
+      onClick={() => goBack(color)}
       className="flex items-center gap-2 font-mono text-xs text-white/60 transition-colors hover:text-white/90"
     >
       <ArrowLeft size={13} />

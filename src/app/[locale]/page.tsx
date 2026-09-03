@@ -4,6 +4,7 @@ import HudBar from "@/components/HudBar";
 import Hero from "@/components/Hero";
 import CoverFlow from "@/components/CoverFlow";
 import ProfessionalSection from "@/components/ProfessionalSection";
+import TerminalSection from "@/components/TerminalSection";
 
 export default async function HomePage() {
   const t = await getTranslations("home");
@@ -54,6 +55,7 @@ export default async function HomePage() {
       </div>
 
       <ProfessionalSection />
+      <TerminalSection />
     </main>
   );
 }

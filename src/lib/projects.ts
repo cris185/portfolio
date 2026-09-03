@@ -5,6 +5,8 @@ export interface Project {
   gradient: string;
   glow: string;
   href: string;
+  /** Drop a real screenshot at /public/covers/<id>.jpg and set this to enable it */
+  coverImage?: string;
   mode: "light" | "dark";
   /** Hero band background (top of the detail page, before the diagonal seam) */
   heroBg: string;

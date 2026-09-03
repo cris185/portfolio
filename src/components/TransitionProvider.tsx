@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 
 interface TransitionCtx {
   navigate: (href: string, color: string) => void;
+  goBack: (color: string) => void;
 }
 
 const Ctx = createContext<TransitionCtx | null>(null);
@@ -46,10 +47,27 @@ export default function TransitionProvider({ children }: { children: React.React
     [reduceMotion, router]
   );
 
+  const goBack = useCallback(
+    (destColor: string) => {
+      if (reduceMotion) {
+        router.back();
+        return;
+      }
+      setColor(destColor);
+      setPhase("covering");
+      const coverTime = (COVER_DURATION + STAGGER * 2) * 1000;
+      window.setTimeout(() => {
+        router.back();
+        window.setTimeout(() => setPhase("revealing"), 90);
+      }, coverTime);
+    },
+    [reduceMotion, router]
+  );
+
   const panels = [PORTFOLIO_BLACK, PORTFOLIO_AMBER, color];
 
   return (
-    <Ctx.Provider value={{ navigate }}>
+    <Ctx.Provider value={{ navigate, goBack }}>
       {children}
       <AnimatePresence
         onExitComplete={() => {
