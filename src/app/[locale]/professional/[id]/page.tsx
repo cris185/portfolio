@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
-import { ArrowUpRight, ExternalLink, GraduationCap, Check } from "lucide-react";
+import { ArrowUpRight, Check } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { getProfessionalWork, professionalWorks } from "@/lib/professional";
 import BackLink from "@/components/BackLink";
@@ -104,10 +105,10 @@ export default async function ProfessionalDetailPage({
 
           {/* university / authorship credit */}
           <div
-            className="mb-9 flex flex-wrap items-center gap-3 rounded-lg px-4 py-3"
+            className="mb-9 flex flex-wrap items-center gap-4 rounded-lg px-4 py-3"
             style={{ background: work.pillBg, border: `1px solid ${work.pillBorder}` }}
           >
-            <GraduationCap size={18} style={{ color: work.accentText }} />
+            <Image src="/utb-logo.png" alt={tp("university")} width={37} height={18} className="shrink-0" />
             <div className="text-[12.5px] leading-relaxed" style={{ color: work.textSecondary }}>
               <span style={{ color: work.textPrimary }}>{tp("university")}</span>
               {" · "}
@@ -130,17 +131,10 @@ export default async function ProfessionalDetailPage({
               {t("viewCatalog")}
               <ArrowUpRight size={15} />
             </a>
-            <a
-              href={work.repo}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded font-mono text-sm font-medium"
-              style={{ border: `1px solid ${work.pillBorder}`, color: work.textPrimary, padding: "12px 22px" }}
-            >
-              <ExternalLink size={15} />
-              {t("viewSource")}
-            </a>
           </div>
+          <p className="mt-3 text-[11.5px]" style={{ color: work.textSecondary }}>
+            {t("sourcePrivateNote")}
+          </p>
         </div>
 
         {work.hasProblem && (

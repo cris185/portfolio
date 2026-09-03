@@ -448,6 +448,7 @@
     "viewRepo": "Ver en GitHub",
     "viewCatalog": "Ver ficha universitaria",
     "viewSource": "Ver código fuente",
+    "sourcePrivateNote": "El código fuente es privado — el acceso lo tiene el asesor académico Edwin Puertas.",
     "advisedBy": "Asesorado por",
     "withTeammates": "Con",
     "techStack": "Stack tecnológico",
