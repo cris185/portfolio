@@ -64,22 +64,22 @@ const TAB_ORDER: TabKey[] = [
   "setup",
 ];
 
-/** Not every project defines every docs section — next-intl throws on a missing key instead of returning undefined. */
-function safeRaw<T>(tp: (key: string) => unknown, key: string, fallback: T): T {
-  try {
-    const value = tp(key);
-    return (value ?? fallback) as T;
-  } catch {
-    return fallback;
-  }
+/**
+ * Not every project defines every docs section. next-intl's `t.raw()`/`t()` never throw to the
+ * caller for a missing key — they log via `onError` and quietly return a "MISSING_MESSAGE: ..."
+ * placeholder *string*, which is truthy and breaks anything expecting an array/object. `t.has()`
+ * is the actual way to check first.
+ */
+type Translator = { (key: string): string; raw: (key: string) => unknown; has: (key: string) => boolean };
+
+function safeRaw<T>(tp: Translator, key: string, fallback: T): T {
+  if (!tp.has(key)) return fallback;
+  const value = tp.raw(key);
+  return (value ?? fallback) as T;
 }
 
-function safeT(tp: (key: string) => string, key: string): string {
-  try {
-    return tp(key);
-  } catch {
-    return "";
-  }
+function safeT(tp: Translator, key: string): string {
+  return tp.has(key) ? tp(key) : "";
 }
 
 function SectionLabel({ children, color }: { children: React.ReactNode; color: string }) {
@@ -127,31 +127,30 @@ export default function ProjectDocs({
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<TabKey>("overview");
   const t = useTranslations("projectPage");
-  const tp = useTranslations(`projects.${projectId}`);
-  const tpRaw = (key: string) => tp.raw(key);
+  const tp = useTranslations(`projects.${projectId}`) as unknown as Translator;
 
-  const decisions = safeRaw(tpRaw, "docs.decisions", [] as { title: string; rationale: string }[]);
-  const businessRules = safeRaw(tpRaw, "docs.businessRules", [] as { category: string; rules: string[] }[]);
+  const decisions = safeRaw(tp, "docs.decisions", [] as { title: string; rationale: string }[]);
+  const businessRules = safeRaw(tp, "docs.businessRules", [] as { category: string; rules: string[] }[]);
   const roles = safeRaw(
-    tpRaw,
+    tp,
     "docs.roles",
     [] as { role: string; capabilities: { label: string; text: string }[] }[]
   );
-  const notifications = safeRaw(tpRaw, "docs.notifications", {
+  const notifications = safeRaw(tp, "docs.notifications", {
     intro: "",
     items: [] as { trigger: string; when: string; attachment: string }[],
     note: "",
   });
-  const limitations = safeRaw(tpRaw, "docs.limitations", [] as string[]);
-  const roadmap = safeRaw(tpRaw, "docs.roadmap", [] as string[]);
-  const schemaDiagramTitles = safeRaw(tpRaw, "docs.schemaDiagramTitles", {} as Record<string, string>);
-  const modelSpecs = safeRaw(tpRaw, "docs.model.specs", [] as { param: string; value: string }[]);
+  const limitations = safeRaw(tp, "docs.limitations", [] as string[]);
+  const roadmap = safeRaw(tp, "docs.roadmap", [] as string[]);
+  const schemaDiagramTitles = safeRaw(tp, "docs.schemaDiagramTitles", {} as Record<string, string>);
+  const modelSpecs = safeRaw(tp, "docs.model.specs", [] as { param: string; value: string }[]);
   const apiReference = safeRaw(
-    tpRaw,
+    tp,
     "docs.apiReference",
     [] as { group: string; rows: { method: string; path: string; description: string }[] }[]
   );
-  const gettingStarted = safeRaw(tpRaw, "docs.gettingStarted", {
+  const gettingStarted = safeRaw(tp, "docs.gettingStarted", {
     prerequisites: [] as string[],
     backendNote: "",
     closingNote: "",
