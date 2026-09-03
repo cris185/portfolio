@@ -26,7 +26,7 @@ export const professionalWorks: ProfessionalWork[] = [
     accentText: "#2dd4bf",
     pillBg: "#2dd4bf14",
     pillBorder: "#2dd4bf2e",
-    techStack: ["Next.js", "React", "Node.js", "PostgreSQL"],
+    techStack: ["Next.js", "React", "TypeScript", "PostgreSQL", "Tailwind CSS", "Redis"],
     hasProblem: false,
   },
   {
@@ -45,7 +45,7 @@ export const professionalWorks: ProfessionalWork[] = [
     accentText: "#8b7edc",
     pillBg: "#8b7edc14",
     pillBorder: "#8b7edc2e",
-    techStack: [],
+    techStack: ["Next.js", "Node.js / Express", "PostgreSQL (Prisma)", "Redis / BullMQ", "SendGrid", "Twilio"],
     hasProblem: false,
   },
   {
