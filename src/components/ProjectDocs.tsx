@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import type { ProjectId, Project } from "@/lib/projects";
 import MermaidDiagram from "./MermaidDiagram";
+import FileTree from "./FileTree";
+import LayerStackDiagram from "./LayerStackDiagram";
 
 type TabKey =
   | "overview"
@@ -160,8 +162,8 @@ export default function ProjectDocs({
     if (key === "overview") return true;
     if (key === "decisions") return decisions.length > 0;
     if (key === "rules") return businessRules.length > 0;
-    if (key === "architecture") return !!docs.architectureDiagram || !!docs.architectureText;
-    if (key === "model") return !!docs.modelDiagramText || modelSpecs.length > 0;
+    if (key === "architecture") return !!docs.architectureDiagram || !!docs.architectureTree?.length;
+    if (key === "model") return !!docs.modelLayers?.length || modelSpecs.length > 0;
     if (key === "api") return apiReference.length > 0;
     if (key === "schema") return !!docs.schemaDiagrams?.length;
     if (key === "roles") return roles.length > 0;
@@ -282,7 +284,7 @@ export default function ProjectDocs({
           )}
 
           {/* architecture */}
-          {activeTab === "architecture" && (docs.architectureDiagram || docs.architectureText) && (
+          {activeTab === "architecture" && (docs.architectureDiagram || docs.architectureTree?.length) && (
             <div>
               <SectionLabel color={accentText}>{t("systemArchitecture")}</SectionLabel>
               {docs.architectureDiagram && (
@@ -290,7 +292,11 @@ export default function ProjectDocs({
                   <MermaidDiagram chart={docs.architectureDiagram} dark={isDark} />
                 </div>
               )}
-              {docs.architectureText && <CodeBlock code={docs.architectureText} isDark={isDark} pillBorder={pillBorder} />}
+              {!!docs.architectureTree?.length && (
+                <div className="rounded-lg p-4" style={{ border: `1px solid ${pillBorder}`, background: isDark ? "#00000020" : "#ffffff" }}>
+                  <FileTree nodes={docs.architectureTree} accentText={accentText} textPrimary={textPrimary} textSecondary={textSecondary} />
+                </div>
+              )}
               {docs.architectureDiagram && (
                 <p className="mt-4 max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
                   {safeT(tp, "docs.architectureNote")}
@@ -300,10 +306,20 @@ export default function ProjectDocs({
           )}
 
           {/* ML model */}
-          {activeTab === "model" && (docs.modelDiagramText || modelSpecs.length > 0) && (
+          {activeTab === "model" && (!!docs.modelLayers?.length || modelSpecs.length > 0) && (
             <div>
               <SectionLabel color={accentText}>{t("modelArchitecture")}</SectionLabel>
-              {docs.modelDiagramText && <CodeBlock code={docs.modelDiagramText} isDark={isDark} pillBorder={pillBorder} />}
+              {!!docs.modelLayers?.length && (
+                <LayerStackDiagram
+                  layers={docs.modelLayers}
+                  accentText={accentText}
+                  textPrimary={textPrimary}
+                  textSecondary={textSecondary}
+                  pillBorder={pillBorder}
+                  pillBg={pillBg}
+                  isDark={isDark}
+                />
+              )}
 
               {modelSpecs.length > 0 && (
                 <div className="mt-8">

@@ -1,5 +1,11 @@
 export type ProjectId = "sevenlever" | "chohealth" | "choplanner" | "neurostock";
 
+export interface TreeNode {
+  name: string;
+  comment?: string;
+  children?: TreeNode[];
+}
+
 export interface Project {
   id: ProjectId;
   gradient: string;
@@ -24,7 +30,8 @@ export interface Project {
   hasProblem: boolean;
   hasStats?: boolean;
   demoAccounts?: {
-    accounts?: { label: string; email: string; password: string }[];
+    /** `identifierLabel` names the field the login form actually asks for ("Email", "Username") since it differs per project */
+    accounts?: { label: string; identifierLabel: string; identifier: string; password: string }[];
     /** Optional larger grid of role-specific demo accounts (e.g. every seeded doctor), shown below `accounts` */
     doctors?: { specKey: string; name: string; email: string; password: string }[];
     /** Link to the payment provider's own test-card documentation, shown alongside `stripeCards` */
@@ -34,11 +41,11 @@ export interface Project {
   docs?: {
     fullStack: { layer: string; tech: string }[];
     architectureDiagram?: string;
-    /** Plain-text/ASCII diagram (folder tree, box diagram), for projects without a mermaid source */
-    architectureText?: string;
+    /** Folder-structure diagram, rendered as a styled file tree, for projects without a mermaid source */
+    architectureTree?: TreeNode[];
     schemaDiagrams?: { key: string; mermaid: string }[];
-    /** ASCII diagram of an ML model's layer stack */
-    modelDiagramText?: string;
+    /** An ML model's layer stack, rendered as a styled vertical flow diagram */
+    modelLayers?: { title: string; detail: string }[];
     /** A representative code snippet (e.g. a data-leakage-prevention pattern), shown verbatim */
     modelCodeSnippet?: string;
     apiExampleRequest?: string;
@@ -97,7 +104,7 @@ export const projects: Project[] = [
     hasProblem: true,
     hasStats: true,
     demoAccounts: {
-      accounts: [{ label: "Patient", email: "patient@example.com", password: "Demo1234!" }],
+      accounts: [{ label: "Patient", identifierLabel: "Email", identifier: "patient@example.com", password: "Demo1234!" }],
       stripeDocsUrl: "https://docs.stripe.com/testing",
       doctors: [
         { specKey: "generalMedicine", name: "Dr. Elena Rodriguez", email: "elena.rodriguez@chohealth.test", password: "Test1234!" },
@@ -399,7 +406,9 @@ NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
     pillBorder: "#534ab72a",
     techStack: ["Next.js 16", "React 19", "Prisma", "NextAuth", "Vercel AI SDK", "Google Calendar API"],
     hasProblem: true,
-    demoAccounts: { accounts: [{ label: "Demo", email: "demo@choplanner.local", password: "demo1234" }] },
+    demoAccounts: {
+      accounts: [{ label: "Demo", identifierLabel: "Email", identifier: "demo@choplanner.local", password: "demo1234" }],
+    },
   },
   {
     id: "neurostock",
@@ -419,7 +428,7 @@ NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
     techStack: ["Django REST", "TensorFlow / Keras", "LSTM", "React", "Chart.js"],
     hasProblem: false,
     demoAccounts: {
-      accounts: [{ label: "Demo", email: "demo@neurostock.dev", password: "Demo1234!" }],
+      accounts: [{ label: "Demo", identifierLabel: "Username", identifier: "demo", password: "Demo1234!" }],
     },
     docs: {
       fullStack: [
@@ -440,56 +449,85 @@ NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
         { layer: "React Router", tech: "7.5 — navigation" },
         { layer: "React Hook Form", tech: "7.56 — forms" },
       ],
-      architectureText: `NeuroStock/
-├── backend-drf/                 # Django REST Framework backend
-│   ├── api/                     # Main predictions app
-│   │   ├── views.py             # Prediction endpoints
-│   │   ├── data_pipeline.py     # Data download and preparation
-│   │   ├── prediction_engine.py # Future predictions engine
-│   │   ├── ml_manager.py        # Singleton for model management
-│   │   ├── serializers.py       # Request validation
-│   │   └── urls.py              # API routes
-│   ├── accounts/                # Authentication app
-│   │   ├── views.py             # Registration and login
-│   │   └── serializers.py       # User serialization
-│   ├── stock_prediction_main/   # Django configuration
-│   │   └── settings.py          # Project settings
-│   └── stock_prediction_model.keras  # Trained LSTM model
-│
-├── frontend-react/              # React + Vite frontend
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── dashboard/       # Predictions panel
-│   │   │   ├── Charts/          # Chart.js charts
-│   │   │   ├── Login/           # Login component
-│   │   │   ├── Register/        # Registration component
-│   │   │   ├── Layout/          # Header and Footer
-│   │   │   ├── Hooks/           # AuthProvider
-│   │   │   └── ui/              # Reusable UI components
-│   │   ├── App.jsx              # Main routes
-│   │   └── axiosInstance.js     # HTTP configuration
-│   └── package.json
-│
-├── docs/                        # Documentation (es/ and en/)
-├── Resources_tf/                # Development notebooks
-│   └── stock_prediction_using_LSTM.ipynb
-└── env/                         # Python virtual environment`,
-      modelDiagramText: `┌─────────────────────────────────────────┐
-│            Input Layer                   │
-│         (100 timesteps, 1 feature)       │
-├─────────────────────────────────────────┤
-│          LSTM Layer 1                    │
-│    (128 units, tanh, return_sequences)   │
-├─────────────────────────────────────────┤
-│          LSTM Layer 2                    │
-│          (64 units, tanh)                │
-├─────────────────────────────────────────┤
-│          Dense Layer                     │
-│            (25 units)                    │
-├─────────────────────────────────────────┤
-│          Output Layer                    │
-│            (1 unit)                      │
-└─────────────────────────────────────────┘`,
+      architectureTree: [
+        {
+          name: "NeuroStock/",
+          children: [
+            {
+              name: "backend-drf/",
+              comment: "Django REST Framework backend",
+              children: [
+                {
+                  name: "api/",
+                  comment: "Main predictions app",
+                  children: [
+                    { name: "views.py", comment: "Prediction endpoints" },
+                    { name: "data_pipeline.py", comment: "Data download and preparation" },
+                    { name: "prediction_engine.py", comment: "Future predictions engine" },
+                    { name: "ml_manager.py", comment: "Singleton for model management" },
+                    { name: "serializers.py", comment: "Request validation" },
+                    { name: "urls.py", comment: "API routes" },
+                  ],
+                },
+                {
+                  name: "accounts/",
+                  comment: "Authentication app",
+                  children: [
+                    { name: "views.py", comment: "Registration and login" },
+                    { name: "serializers.py", comment: "User serialization" },
+                  ],
+                },
+                {
+                  name: "stock_prediction_main/",
+                  comment: "Django configuration",
+                  children: [{ name: "settings.py", comment: "Project settings" }],
+                },
+                { name: "stock_prediction_model.keras", comment: "Trained LSTM model" },
+              ],
+            },
+            {
+              name: "frontend-react/",
+              comment: "React + Vite frontend",
+              children: [
+                {
+                  name: "src/",
+                  children: [
+                    {
+                      name: "components/",
+                      children: [
+                        { name: "dashboard/", comment: "Predictions panel" },
+                        { name: "Charts/", comment: "Chart.js charts" },
+                        { name: "Login/", comment: "Login component" },
+                        { name: "Register/", comment: "Registration component" },
+                        { name: "Layout/", comment: "Header and Footer" },
+                        { name: "Hooks/", comment: "AuthProvider" },
+                        { name: "ui/", comment: "Reusable UI components" },
+                      ],
+                    },
+                    { name: "App.jsx", comment: "Main routes" },
+                    { name: "axiosInstance.js", comment: "HTTP configuration" },
+                  ],
+                },
+                { name: "package.json" },
+              ],
+            },
+            { name: "docs/", comment: "Documentation (es/ and en/)" },
+            {
+              name: "Resources_tf/",
+              comment: "Development notebooks",
+              children: [{ name: "stock_prediction_using_LSTM.ipynb" }],
+            },
+            { name: "env/", comment: "Python virtual environment" },
+          ],
+        },
+      ],
+      modelLayers: [
+        { title: "Input Layer", detail: "100 timesteps, 1 feature" },
+        { title: "LSTM Layer 1", detail: "128 units, tanh, return_sequences" },
+        { title: "LSTM Layer 2", detail: "64 units, tanh" },
+        { title: "Dense Layer", detail: "25 units" },
+        { title: "Output Layer", detail: "1 unit" },
+      ],
       modelCodeSnippet: `# CORRECT: scaler fitted ONLY on training data
 train_scaler = MinMaxScaler(feature_range=(0, 1))
 train_scaler.fit(data_split['train'].values.reshape(-1, 1))

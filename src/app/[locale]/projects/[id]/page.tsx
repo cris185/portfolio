@@ -235,7 +235,7 @@ export default async function ProjectDetailPage({
               <div className="mb-6 flex flex-wrap gap-3">
                 {project.demoAccounts.accounts.map((acc) => (
                   <div
-                    key={acc.email}
+                    key={acc.identifier}
                     className="rounded-lg px-4 py-3 font-mono text-xs"
                     style={{
                       background: project.pillBg,
@@ -246,7 +246,9 @@ export default async function ProjectDetailPage({
                     <div className="mb-1 font-medium" style={{ color: project.accentText }}>
                       {acc.label}
                     </div>
-                    <div>{acc.email}</div>
+                    <div style={{ color: project.textSecondary }}>
+                      {acc.identifierLabel}: <span style={{ color: project.textPrimary }}>{acc.identifier}</span>
+                    </div>
                     <div style={{ color: project.textSecondary }}>{acc.password}</div>
                   </div>
                 ))}
