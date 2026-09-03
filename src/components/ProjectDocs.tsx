@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   ChevronDown,
@@ -64,6 +64,24 @@ const TAB_ORDER: TabKey[] = [
   "setup",
 ];
 
+/** Not every project defines every docs section — next-intl throws on a missing key instead of returning undefined. */
+function safeRaw<T>(tp: (key: string) => unknown, key: string, fallback: T): T {
+  try {
+    const value = tp(key);
+    return (value ?? fallback) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function safeT(tp: (key: string) => string, key: string): string {
+  try {
+    return tp(key);
+  } catch {
+    return "";
+  }
+}
+
 function SectionLabel({ children, color }: { children: React.ReactNode; color: string }) {
   return (
     <div className="mb-4 font-mono text-xs uppercase tracking-[0.1em]" style={{ color }}>
@@ -110,28 +128,34 @@ export default function ProjectDocs({
   const [tab, setTab] = useState<TabKey>("overview");
   const t = useTranslations("projectPage");
   const tp = useTranslations(`projects.${projectId}`);
+  const tpRaw = (key: string) => tp.raw(key);
 
-  const decisions = (tp.raw("docs.decisions") ?? []) as { title: string; rationale: string }[];
-  const businessRules = (tp.raw("docs.businessRules") ?? []) as { category: string; rules: string[] }[];
-  const roles = (tp.raw("docs.roles") ?? []) as { role: string; capabilities: { label: string; text: string }[] }[];
-  const notifications = (tp.raw("docs.notifications") ?? { intro: "", items: [], note: "" }) as {
-    intro: string;
-    items: { trigger: string; when: string; attachment: string }[];
-    note: string;
-  };
-  const limitations = (tp.raw("docs.limitations") ?? []) as string[];
-  const roadmap = (tp.raw("docs.roadmap") ?? []) as string[];
-  const schemaDiagramTitles = (tp.raw("docs.schemaDiagramTitles") ?? {}) as Record<string, string>;
-  const modelSpecs = (tp.raw("docs.model.specs") ?? []) as { param: string; value: string }[];
-  const apiReference = (tp.raw("docs.apiReference") ?? []) as {
-    group: string;
-    rows: { method: string; path: string; description: string }[];
-  }[];
-  const gettingStarted = (tp.raw("docs.gettingStarted") ?? { prerequisites: [] }) as {
-    prerequisites: string[];
-    backendNote: string;
-    closingNote: string;
-  };
+  const decisions = safeRaw(tpRaw, "docs.decisions", [] as { title: string; rationale: string }[]);
+  const businessRules = safeRaw(tpRaw, "docs.businessRules", [] as { category: string; rules: string[] }[]);
+  const roles = safeRaw(
+    tpRaw,
+    "docs.roles",
+    [] as { role: string; capabilities: { label: string; text: string }[] }[]
+  );
+  const notifications = safeRaw(tpRaw, "docs.notifications", {
+    intro: "",
+    items: [] as { trigger: string; when: string; attachment: string }[],
+    note: "",
+  });
+  const limitations = safeRaw(tpRaw, "docs.limitations", [] as string[]);
+  const roadmap = safeRaw(tpRaw, "docs.roadmap", [] as string[]);
+  const schemaDiagramTitles = safeRaw(tpRaw, "docs.schemaDiagramTitles", {} as Record<string, string>);
+  const modelSpecs = safeRaw(tpRaw, "docs.model.specs", [] as { param: string; value: string }[]);
+  const apiReference = safeRaw(
+    tpRaw,
+    "docs.apiReference",
+    [] as { group: string; rows: { method: string; path: string; description: string }[] }[]
+  );
+  const gettingStarted = safeRaw(tpRaw, "docs.gettingStarted", {
+    prerequisites: [] as string[],
+    backendNote: "",
+    closingNote: "",
+  });
 
   const availableTabs = TAB_ORDER.filter((key) => {
     if (key === "overview") return true;
@@ -148,6 +172,12 @@ export default function ProjectDocs({
     if (key === "setup") return !!docs.gettingStarted;
     return false;
   });
+
+  const activeTab = availableTabs.includes(tab) ? tab : "overview";
+
+  useEffect(() => {
+    setTab("overview");
+  }, [projectId]);
 
   return (
     <div className="mt-14 max-w-3xl">
@@ -171,7 +201,7 @@ export default function ProjectDocs({
           <div className="mb-8 flex flex-wrap gap-2 border-b pb-4" style={{ borderColor: pillBorder }}>
             {availableTabs.map((key) => {
               const Icon = TAB_ICONS[key];
-              const active = tab === key;
+              const active = activeTab === key;
               return (
                 <button
                   key={key}
@@ -193,17 +223,17 @@ export default function ProjectDocs({
           </div>
 
           {/* overview */}
-          {tab === "overview" && (
+          {activeTab === "overview" && (
             <div>
               <SectionLabel color={accentText}>{t("overviewTitle")}</SectionLabel>
               <p className="max-w-2xl text-[14px] leading-relaxed" style={{ color: textPrimary }}>
-                {tp("docs.problemLong")}
+                {safeT(tp, "docs.problemLong")}
               </p>
             </div>
           )}
 
           {/* decisions */}
-          {tab === "decisions" && (
+          {activeTab === "decisions" && (
             <div>
               <SectionLabel color={accentText}>{t("keyDecisions")}</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -222,11 +252,11 @@ export default function ProjectDocs({
           )}
 
           {/* business rules */}
-          {tab === "rules" && (
+          {activeTab === "rules" && (
             <div>
               <SectionLabel color={accentText}>{t("businessRules")}</SectionLabel>
               <p className="mb-6 max-w-2xl text-[13px] leading-relaxed" style={{ color: textSecondary }}>
-                {tp("docs.businessRulesIntro")}
+                {safeT(tp, "docs.businessRulesIntro")}
               </p>
               <div className="flex flex-col gap-7">
                 {businessRules.map((group) => (
@@ -253,7 +283,7 @@ export default function ProjectDocs({
           )}
 
           {/* architecture */}
-          {tab === "architecture" && (docs.architectureDiagram || docs.architectureText) && (
+          {activeTab === "architecture" && (docs.architectureDiagram || docs.architectureText) && (
             <div>
               <SectionLabel color={accentText}>{t("systemArchitecture")}</SectionLabel>
               {docs.architectureDiagram && (
@@ -264,14 +294,14 @@ export default function ProjectDocs({
               {docs.architectureText && <CodeBlock code={docs.architectureText} isDark={isDark} pillBorder={pillBorder} />}
               {docs.architectureDiagram && (
                 <p className="mt-4 max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
-                  {tp("docs.architectureNote")}
+                  {safeT(tp, "docs.architectureNote")}
                 </p>
               )}
             </div>
           )}
 
           {/* ML model */}
-          {tab === "model" && (docs.modelDiagramText || modelSpecs.length > 0) && (
+          {activeTab === "model" && (docs.modelDiagramText || modelSpecs.length > 0) && (
             <div>
               <SectionLabel color={accentText}>{t("modelArchitecture")}</SectionLabel>
               {docs.modelDiagramText && <CodeBlock code={docs.modelDiagramText} isDark={isDark} pillBorder={pillBorder} />}
@@ -304,7 +334,7 @@ export default function ProjectDocs({
                     {t("dataLeakagePrevention")}
                   </div>
                   <p className="mb-3 max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
-                    {tp("docs.model.dataLeakageIntro")}
+                    {safeT(tp, "docs.model.dataLeakageIntro")}
                   </p>
                   <CodeBlock code={docs.modelCodeSnippet} isDark={isDark} pillBorder={pillBorder} />
                 </div>
@@ -315,14 +345,14 @@ export default function ProjectDocs({
                   {t("uncertaintyQuantification")}
                 </div>
                 <p className="max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
-                  {tp("docs.model.uncertaintyNote")}
+                  {safeT(tp, "docs.model.uncertaintyNote")}
                 </p>
               </div>
             </div>
           )}
 
           {/* API reference */}
-          {tab === "api" && apiReference.length > 0 && (
+          {activeTab === "api" && apiReference.length > 0 && (
             <div>
               <SectionLabel color={accentText}>{t("apiReferenceTitle")}</SectionLabel>
               <div className="flex flex-col gap-7">
@@ -378,11 +408,11 @@ export default function ProjectDocs({
           )}
 
           {/* database schema */}
-          {tab === "schema" && !!docs.schemaDiagrams?.length && (
+          {activeTab === "schema" && !!docs.schemaDiagrams?.length && (
             <div>
               <SectionLabel color={accentText}>{t("databaseSchema")}</SectionLabel>
               <p className="mb-6 max-w-2xl text-[13px] leading-relaxed" style={{ color: textSecondary }}>
-                {tp("docs.schemaIntro")}
+                {safeT(tp, "docs.schemaIntro")}
               </p>
               <div className="flex flex-col gap-8">
                 {docs.schemaDiagrams.map((d) => (
@@ -397,13 +427,13 @@ export default function ProjectDocs({
                 ))}
               </div>
               <p className="mt-6 max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
-                {tp("docs.schemaNote")}
+                {safeT(tp, "docs.schemaNote")}
               </p>
             </div>
           )}
 
           {/* roles */}
-          {tab === "roles" && (
+          {activeTab === "roles" && (
             <div>
               <SectionLabel color={accentText}>{t("capabilitiesByRole")}</SectionLabel>
               <div className="grid gap-6 sm:grid-cols-2">
@@ -475,7 +505,7 @@ export default function ProjectDocs({
           )}
 
           {/* limitations */}
-          {tab === "limitations" && (
+          {activeTab === "limitations" && (
             <div>
               <SectionLabel color={accentText}>{t("knownLimitations")}</SectionLabel>
               <ul className="flex flex-col gap-5">
@@ -490,7 +520,7 @@ export default function ProjectDocs({
           )}
 
           {/* tech stack */}
-          {tab === "stack" && (
+          {activeTab === "stack" && (
             <div>
               <SectionLabel color={accentText}>{t("fullStackTitle")}</SectionLabel>
               <div className="flex flex-col overflow-hidden rounded-lg" style={{ border: `1px solid ${pillBorder}` }}>
@@ -511,7 +541,7 @@ export default function ProjectDocs({
           )}
 
           {/* roadmap */}
-          {tab === "roadmap" && (
+          {activeTab === "roadmap" && (
             <div>
               <SectionLabel color={accentText}>{t("roadmapTitle")}</SectionLabel>
               <ul className="flex flex-col gap-4">
@@ -526,7 +556,7 @@ export default function ProjectDocs({
           )}
 
           {/* getting started */}
-          {tab === "setup" && docs.gettingStarted && (
+          {activeTab === "setup" && docs.gettingStarted && (
             <div>
               <SectionLabel color={accentText}>{t("gettingStartedTitle")}</SectionLabel>
 
