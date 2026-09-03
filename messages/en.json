@@ -245,6 +245,22 @@
           { "title": "The trained LSTM model is cached as a thread-safe singleton", "rationale": "Deserializing a Keras model from disk on every request would make concurrent predictions slow and wasteful; ml_manager.py loads it once and holds it in memory, safe for concurrent access." },
           { "title": "JWT authentication with refresh token rotation", "rationale": "A 15-minute access token limits the exposure window of a leaked token, while a 7-day rotating refresh token keeps the user logged in without asking them to re-authenticate constantly — rotation means a captured refresh token can't be replayed indefinitely." }
         ],
+        "architectureNote": "A client-server split with a clear boundary: the React SPA never touches Yahoo Finance or the model directly, everything goes through the Django REST API. The business-logic layer (DataPipeline, MLManager, PredictionEngine) sits between the API and the ML layer so the view functions stay thin.",
+        "dataFlowTitles": {
+          "auth": "Authentication flow",
+          "prediction": "Prediction flow"
+        },
+        "security": {
+          "steps": [
+            "A successful login makes the backend generate an access + refresh token pair.",
+            "The frontend stores both tokens in localStorage.",
+            "Every request includes Authorization: Bearer <access>.",
+            "The access token expires after 15 minutes.",
+            "The frontend uses the refresh token to get a new access token.",
+            "If the refresh token has also expired, the frontend logs the user out automatically."
+          ]
+        },
+        "dataModelNote": "Stock data itself is not stored anywhere — it's fetched in real time from Yahoo Finance on every prediction. The database only persists user accounts.",
         "model": {
           "specs": [
             { "param": "Input sequence", "value": "100 days" },
@@ -357,6 +373,10 @@
     "problemStatement": "Problem statement",
     "businessRules": "Business rules",
     "systemArchitecture": "System architecture",
+    "directoryStructure": "Directory structure",
+    "keyComponents": "Key components",
+    "securityTitle": "Security",
+    "dataModelTitle": "Data model",
     "databaseSchema": "Database schema",
     "capabilitiesByRole": "Capabilities by role",
     "emailNotifications": "Email notifications",

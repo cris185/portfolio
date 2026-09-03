@@ -43,6 +43,14 @@ export interface Project {
     architectureDiagram?: string;
     /** Folder-structure diagram, rendered as a styled file tree, for projects without a mermaid source */
     architectureTree?: TreeNode[];
+    /** Sequence diagrams for key request/response flows (e.g. auth, a core action). `key` looks up a translated title. */
+    dataFlows?: { key: string; mermaid: string }[];
+    /** Key implementation pieces worth calling out — title and code stay in English, like any other code sample */
+    components?: { title: string; code: string }[];
+    /** A simple data model table for projects too small for full ER diagrams */
+    dataModel?: { table: string; columns: { field: string; type: string }[] };
+    /** A security-relevant config snippet (e.g. JWT lifetimes), shown verbatim below translated `docs.security.steps` */
+    securityConfigSnippet?: string;
     schemaDiagrams?: { key: string; mermaid: string }[];
     /** An ML model's layer stack, rendered as a styled vertical flow diagram */
     modelLayers?: { title: string; detail: string }[];
@@ -449,6 +457,177 @@ NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
         { layer: "React Router", tech: "7.5 — navigation" },
         { layer: "React Hook Form", tech: "7.56 — forms" },
       ],
+      architectureDiagram: `flowchart TB
+    subgraph client["Client — React + Vite (SPA)"]
+        Charts["Charts (Chart.js)"]
+        Dashboard["Dashboard"]
+        Auth["Auth (Login / Register)"]
+        Axios["axiosInstance<br/>(interceptors + JWT refresh)"]
+    end
+
+    subgraph server["Server — Django REST Framework"]
+        subgraph api["API layer"]
+            Predict["/predict/"]
+            Token["/token/"]
+            Register["/register/"]
+        end
+        subgraph logic["Business logic"]
+            DP["DataPipeline<br/>(yfinance)"]
+            MLM["MLManager<br/>(singleton)"]
+            PE["PredictionEngine<br/>(Monte Carlo)"]
+        end
+        subgraph ml["ML layer"]
+            LSTM["LSTM model (TensorFlow/Keras)<br/>stock_prediction_model.keras"]
+        end
+    end
+
+    subgraph data["Data layer"]
+        DB[("SQLite DB<br/>users / auth")]
+        YF[["Yahoo Finance API"]]
+    end
+
+    Charts --> Axios
+    Dashboard --> Axios
+    Auth --> Axios
+    Axios -->|"HTTP/REST (JSON)"| api
+    api --> logic
+    logic --> ml
+    DP --> YF
+    Token --> DB
+    Register --> DB`,
+      dataFlows: [
+        {
+          key: "auth",
+          mermaid: `sequenceDiagram
+    participant U as User
+    participant B as Backend
+    U->>B: POST /register/
+    B-->>U: { success: true }
+    U->>B: POST /token/ { username, password }
+    B-->>U: { access, refresh }
+    Note over U: stores both tokens in localStorage`,
+        },
+        {
+          key: "prediction",
+          mermaid: `sequenceDiagram
+    participant D as Dashboard
+    participant V as Views
+    participant DP as DataPipeline
+    participant ML as MLManager
+    participant M as LSTM Model
+    participant PE as PredictionEngine
+    D->>V: POST /predict/ { ticker: "AAPL" }
+    V->>DP: yf.download()
+    V->>ML: get_model()
+    ML->>M: load once, cache in memory
+    V->>PE: predict_future()
+    PE->>M: .predict()
+    V-->>D: { backtesting metrics, future predictions }`,
+        },
+      ],
+      components: [
+        {
+          title: "MLModelManager (singleton pattern)",
+          code: `# Purpose: load the model once and cache it in memory
+class MLModelManager:
+    _instance = None
+    _lock = threading.Lock()
+    _model = None
+
+    @classmethod
+    def get_instance(cls):
+        # Thread-safe lazy initialization
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = cls()
+        return cls._instance
+
+    def get_model(self):
+        # Load the model only if it isn't cached yet
+        if self._model is None:
+            self._model = load_model('stock_prediction_model.keras')
+        return self._model
+
+# Eliminates repetitive I/O (~2-3s per request), thread-safe,
+# a single model instance shared across concurrent requests.`,
+        },
+        {
+          title: "DataPipeline",
+          code: `def download_stock_data(ticker, years=10):
+    """Download data from Yahoo Finance"""
+
+def prepare_backtesting_data(close_prices, train_ratio=0.7):
+    """Split data into train/test without data leakage"""
+
+def create_sequences(data, sequence_length=100):
+    """Create sequences for the LSTM"""`,
+        },
+        {
+          title: "FuturePredictionEngine",
+          code: `# Recursive prediction with Monte Carlo Dropout
+def predict_future(historical_prices, horizon, confidence_level):
+    """
+    - Uses the last 100 days as the initial sequence
+    - Predicts day 1, appends it to the sequence
+    - Predicts day 2, appends it to the sequence
+    - ... until \`horizon\` days are covered
+    - Computes confidence intervals along the way
+    """`,
+        },
+        {
+          title: "AuthProvider (React Context)",
+          code: `// Holds global authentication state
+const AuthContext = createContext();
+
+const AuthProvider = ({ children }) => {
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    !!localStorage.getItem('accessToken')
+  );
+
+  return (
+    <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};`,
+        },
+        {
+          title: "axiosInstance (HTTP client)",
+          code: `// Attaches the JWT on every request
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken');
+  if (token) config.headers['Authorization'] = \`Bearer \${token}\`;
+  return config;
+});
+
+// Auto-refreshes an expired token and retries the request
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response.status === 401) {
+      // refresh token and retry
+    }
+  }
+);`,
+        },
+      ],
+      dataModel: {
+        table: "User",
+        columns: [
+          { field: "id", type: "INTEGER (PK)" },
+          { field: "username", type: "VARCHAR(150)" },
+          { field: "email", type: "VARCHAR(254)" },
+          { field: "password", type: "VARCHAR(128), hashed" },
+          { field: "date_joined", type: "DATETIME" },
+          { field: "last_login", type: "DATETIME" },
+        ],
+      },
+      securityConfigSnippet: `SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+}`,
       architectureTree: [
         {
           name: "NeuroStock/",
@@ -459,30 +638,40 @@ NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
               children: [
                 {
                   name: "api/",
-                  comment: "Main predictions app",
+                  comment: "Main app — predictions",
                   children: [
-                    { name: "views.py", comment: "Prediction endpoints" },
-                    { name: "data_pipeline.py", comment: "Data download and preparation" },
-                    { name: "prediction_engine.py", comment: "Future predictions engine" },
-                    { name: "ml_manager.py", comment: "Singleton for model management" },
-                    { name: "serializers.py", comment: "Request validation" },
+                    { name: "views.py", comment: "StockPredictionAPIView" },
                     { name: "urls.py", comment: "API routes" },
+                    { name: "serializers.py", comment: "Input data validation" },
+                    { name: "data_pipeline.py", comment: "Data download and preparation" },
+                    { name: "ml_manager.py", comment: "Singleton for model management" },
+                    { name: "prediction_engine.py", comment: "Future predictions engine" },
+                    { name: "migrations/", comment: "Database migrations" },
                   ],
                 },
                 {
                   name: "accounts/",
                   comment: "Authentication app",
                   children: [
-                    { name: "views.py", comment: "Registration and login" },
-                    { name: "serializers.py", comment: "User serialization" },
+                    { name: "views.py", comment: "RegisterView, ProtectedView" },
+                    { name: "serializers.py", comment: "UserSerializer" },
+                    { name: "migrations/" },
                   ],
                 },
                 {
                   name: "stock_prediction_main/",
-                  comment: "Django configuration",
-                  children: [{ name: "settings.py", comment: "Project settings" }],
+                  comment: "Django project configuration",
+                  children: [
+                    { name: "settings.py", comment: "Main configuration" },
+                    { name: "urls.py", comment: "Root URL" },
+                    { name: "wsgi.py", comment: "Production WSGI" },
+                    { name: "asgi.py", comment: "Async support" },
+                  ],
                 },
-                { name: "stock_prediction_model.keras", comment: "Trained LSTM model" },
+                { name: "stock_prediction_model.keras", comment: "Pre-trained LSTM model" },
+                { name: "manage.py", comment: "Django CLI" },
+                { name: "requirements.txt", comment: "Python dependencies" },
+                { name: "db.sqlite3", comment: "SQLite database" },
               ],
             },
             {
@@ -492,31 +681,39 @@ NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
                 {
                   name: "src/",
                   children: [
+                    { name: "App.jsx", comment: "Root component and routes" },
+                    { name: "main.jsx", comment: "Entry point" },
+                    { name: "PrivateRoute.jsx", comment: "Protected routes" },
+                    { name: "PublicRoute.jsx", comment: "Public routes" },
                     {
                       name: "components/",
                       children: [
-                        { name: "dashboard/", comment: "Predictions panel" },
-                        { name: "Charts/", comment: "Chart.js charts" },
-                        { name: "Login/", comment: "Login component" },
-                        { name: "Register/", comment: "Registration component" },
-                        { name: "Layout/", comment: "Header and Footer" },
-                        { name: "Hooks/", comment: "AuthProvider" },
-                        { name: "ui/", comment: "Reusable UI components" },
+                        { name: "Main.jsx", comment: "Landing page" },
+                        { name: "axiosInstance.js", comment: "Configured HTTP client" },
+                        { name: "dashboard/", comment: "Dashboard.jsx — main prediction panel" },
+                        { name: "Charts/", comment: "StockChart.jsx" },
+                        { name: "Login/", comment: "Login.jsx" },
+                        { name: "Register/", comment: "Register.jsx, RegisterForm.jsx" },
+                        { name: "Layout/", comment: "Header.jsx, Footer.jsx" },
+                        { name: "Hooks/", comment: "AuthProvider.jsx" },
+                        { name: "ui/", comment: "PremiumButton, PremiumCard, MetricCard, SkeletonLoader, EmptyState" },
                       ],
                     },
-                    { name: "App.jsx", comment: "Main routes" },
-                    { name: "axiosInstance.js", comment: "HTTP configuration" },
+                    { name: "assets/css/", comment: "globals.css, style.css" },
                   ],
                 },
                 { name: "package.json" },
+                { name: "vite.config.js" },
+                { name: "tailwind.config.js" },
+                { name: "index.html" },
               ],
             },
-            { name: "docs/", comment: "Documentation (es/ and en/)" },
             {
               name: "Resources_tf/",
-              comment: "Development notebooks",
+              comment: "ML development notebooks",
               children: [{ name: "stock_prediction_using_LSTM.ipynb" }],
             },
+            { name: "docs/", comment: "Documentation (es/ and en/)" },
             { name: "env/", comment: "Python virtual environment" },
           ],
         },

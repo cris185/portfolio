@@ -146,6 +146,8 @@ export default function ProjectDocs({
   const limitations = safeRaw(tp, "docs.limitations", [] as string[]);
   const roadmap = safeRaw(tp, "docs.roadmap", [] as string[]);
   const schemaDiagramTitles = safeRaw(tp, "docs.schemaDiagramTitles", {} as Record<string, string>);
+  const dataFlowTitles = safeRaw(tp, "docs.dataFlowTitles", {} as Record<string, string>);
+  const securitySteps = safeRaw(tp, "docs.security.steps", [] as string[]);
   const modelSpecs = safeRaw(tp, "docs.model.specs", [] as { param: string; value: string }[]);
   const apiReference = safeRaw(
     tp,
@@ -285,22 +287,117 @@ export default function ProjectDocs({
 
           {/* architecture */}
           {activeTab === "architecture" && (docs.architectureDiagram || docs.architectureTree?.length) && (
-            <div>
-              <SectionLabel color={accentText}>{t("systemArchitecture")}</SectionLabel>
-              {docs.architectureDiagram && (
-                <div className="rounded-lg p-5" style={{ border: `1px solid ${pillBorder}`, background: isDark ? "#00000020" : "#ffffff" }}>
-                  <MermaidDiagram chart={docs.architectureDiagram} dark={isDark} />
-                </div>
-              )}
+            <div className="flex flex-col gap-10">
+              <div>
+                <SectionLabel color={accentText}>{t("systemArchitecture")}</SectionLabel>
+                {docs.architectureDiagram && (
+                  <div className="rounded-lg p-5" style={{ border: `1px solid ${pillBorder}`, background: isDark ? "#00000020" : "#ffffff" }}>
+                    <MermaidDiagram chart={docs.architectureDiagram} dark={isDark} />
+                  </div>
+                )}
+                {safeT(tp, "docs.architectureNote") && (
+                  <p className="mt-4 max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
+                    {safeT(tp, "docs.architectureNote")}
+                  </p>
+                )}
+              </div>
+
               {!!docs.architectureTree?.length && (
-                <div className="rounded-lg p-4" style={{ border: `1px solid ${pillBorder}`, background: isDark ? "#00000020" : "#ffffff" }}>
-                  <FileTree nodes={docs.architectureTree} accentText={accentText} textPrimary={textPrimary} textSecondary={textSecondary} />
+                <div>
+                  <div className="mb-3 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                    {t("directoryStructure")}
+                  </div>
+                  <div className="rounded-lg p-4" style={{ border: `1px solid ${pillBorder}`, background: isDark ? "#00000020" : "#ffffff" }}>
+                    <FileTree nodes={docs.architectureTree} accentText={accentText} textPrimary={textPrimary} textSecondary={textSecondary} />
+                  </div>
                 </div>
               )}
-              {docs.architectureDiagram && (
-                <p className="mt-4 max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
-                  {safeT(tp, "docs.architectureNote")}
-                </p>
+
+              {!!docs.dataFlows?.length &&
+                docs.dataFlows.map((flow) => (
+                  <div key={flow.key}>
+                    <div className="mb-3 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                      {dataFlowTitles[flow.key] ?? flow.key}
+                    </div>
+                    <div className="rounded-lg p-5" style={{ border: `1px solid ${pillBorder}`, background: isDark ? "#00000020" : "#ffffff" }}>
+                      <MermaidDiagram chart={flow.mermaid} dark={isDark} />
+                    </div>
+                  </div>
+                ))}
+
+              {securitySteps.length > 0 && (
+                <div>
+                  <div className="mb-3 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                    {t("securityTitle")}
+                  </div>
+                  <ol className="mb-4 flex flex-col gap-2">
+                    {securitySteps.map((step, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
+                        <span
+                          className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full font-mono text-[9px]"
+                          style={{ background: pillBg, border: `1px solid ${pillBorder}`, color: accentText }}
+                        >
+                          {i + 1}
+                        </span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  {docs.securityConfigSnippet && (
+                    <CodeBlock code={docs.securityConfigSnippet} isDark={isDark} pillBorder={pillBorder} />
+                  )}
+                </div>
+              )}
+
+              {!!docs.components?.length && (
+                <div>
+                  <div className="mb-3 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                    {t("keyComponents")}
+                  </div>
+                  <div className="flex flex-col gap-5">
+                    {docs.components.map((c) => (
+                      <div key={c.title}>
+                        <div className="mb-1.5 font-mono text-[12px]" style={{ color: accentText }}>
+                          {c.title}
+                        </div>
+                        <CodeBlock code={c.code} isDark={isDark} pillBorder={pillBorder} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {docs.dataModel && (
+                <div>
+                  <div className="mb-3 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                    {t("dataModelTitle")}
+                  </div>
+                  <div className="max-w-sm overflow-hidden rounded-lg" style={{ border: `1px solid ${pillBorder}` }}>
+                    <div
+                      className="px-4 py-2 font-mono text-[11px] uppercase tracking-[0.06em]"
+                      style={{ background: pillBg, color: accentText, borderBottom: `1px solid ${pillBorder}` }}
+                    >
+                      {docs.dataModel.table}
+                    </div>
+                    {docs.dataModel.columns.map((col, i) => (
+                      <div
+                        key={col.field}
+                        className="flex justify-between gap-4 px-4 py-2 text-[12px]"
+                        style={{ borderTop: i === 0 ? "none" : `1px solid ${pillBorder}` }}
+                      >
+                        <span className="font-mono" style={{ color: textPrimary }}>
+                          {col.field}
+                        </span>
+                        <span style={{ color: textSecondary }}>{col.type}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {safeT(tp, "docs.dataModelNote") && (
+                    <p className="mt-3 max-w-2xl text-[12px] leading-relaxed" style={{ color: textSecondary }}>
+                      {safeT(tp, "docs.dataModelNote")}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )}

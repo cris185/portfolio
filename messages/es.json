@@ -245,6 +245,22 @@
           { "title": "El modelo LSTM entrenado se cachea como un singleton thread-safe", "rationale": "Deserializar un modelo de Keras desde disco en cada request haría las predicciones concurrentes lentas y costosas; ml_manager.py lo carga una sola vez y lo mantiene en memoria, seguro para acceso concurrente." },
           { "title": "Autenticación JWT con rotación de refresh tokens", "rationale": "Un access token de 15 minutos limita la ventana de exposición de un token filtrado, mientras que un refresh token rotativo de 7 días mantiene al usuario con sesión iniciada sin pedirle reautenticarse constantemente — la rotación implica que un refresh token capturado no puede reutilizarse indefinidamente." }
         ],
+        "architectureNote": "Una separación clara entre cliente y servidor: la SPA de React nunca toca Yahoo Finance ni el modelo directamente, todo pasa por la API REST de Django. La capa de lógica de negocio (DataPipeline, MLManager, PredictionEngine) queda entre la API y la capa de ML para que las vistas se mantengan delgadas.",
+        "dataFlowTitles": {
+          "auth": "Flujo de autenticación",
+          "prediction": "Flujo de predicción"
+        },
+        "security": {
+          "steps": [
+            "Un login exitoso hace que el backend genere un par de tokens access + refresh.",
+            "El frontend guarda ambos tokens en localStorage.",
+            "Cada request incluye Authorization: Bearer <access>.",
+            "El access token expira a los 15 minutos.",
+            "El frontend usa el refresh token para obtener un nuevo access token.",
+            "Si el refresh token también expiró, el frontend cierra la sesión automáticamente."
+          ]
+        },
+        "dataModelNote": "Los datos de las acciones en sí no se almacenan en ningún lado — se obtienen en tiempo real desde Yahoo Finance en cada predicción. La base de datos solo persiste las cuentas de usuario.",
         "model": {
           "specs": [
             { "param": "Secuencia de entrada", "value": "100 días" },
@@ -357,6 +373,10 @@
     "problemStatement": "Planteamiento del problema",
     "businessRules": "Reglas de negocio",
     "systemArchitecture": "Arquitectura del sistema",
+    "directoryStructure": "Estructura de carpetas",
+    "keyComponents": "Componentes clave",
+    "securityTitle": "Seguridad",
+    "dataModelTitle": "Modelo de datos",
     "databaseSchema": "Esquema de base de datos",
     "capabilitiesByRole": "Capacidades por rol",
     "emailNotifications": "Notificaciones por correo",
