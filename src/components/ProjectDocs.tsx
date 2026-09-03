@@ -155,12 +155,13 @@ export default function ProjectDocs({
     "docs.apiReference",
     [] as { group: string; rows: { method: string; path: string; description: string }[] }[]
   );
-  const gettingStarted = safeRaw(tp, "docs.gettingStarted", {
-    prerequisites: [] as string[],
-    stepTitles: {} as Record<string, string>,
-    stepNotes: {} as Record<string, string>,
-    closingNote: "",
-  });
+  const gettingStartedRaw = safeRaw(tp, "docs.gettingStarted", {} as Record<string, unknown>);
+  const gettingStarted = {
+    prerequisites: (gettingStartedRaw.prerequisites ?? []) as string[],
+    stepTitles: (gettingStartedRaw.stepTitles ?? {}) as Record<string, string>,
+    stepNotes: (gettingStartedRaw.stepNotes ?? {}) as Record<string, string>,
+    closingNote: (gettingStartedRaw.closingNote ?? "") as string,
+  };
 
   const availableTabs = TAB_ORDER.filter((key) => {
     if (key === "overview") return true;
@@ -479,7 +480,7 @@ export default function ProjectDocs({
                       <table className="w-full min-w-[480px] border-collapse text-[12px]">
                         <tbody>
                           {group.rows.map((row, i) => (
-                            <tr key={row.path} style={{ borderTop: i === 0 ? "none" : `1px solid ${pillBorder}` }}>
+                            <tr key={`${row.method}-${row.path}`} style={{ borderTop: i === 0 ? "none" : `1px solid ${pillBorder}` }}>
                               <td className="whitespace-nowrap px-3 py-2 font-mono" style={{ color: accentText }}>
                                 {row.method}
                               </td>

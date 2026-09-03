@@ -431,6 +431,7 @@
           "The backend trusts the frontend's dice rolls instead of re-validating them. That's a reasonable trade-off for a local, non-competitive game between two people at the same table, but it means this design would need real server-side validation before it could support any online or competitive mode."
         ],
         "gettingStarted": {
+          "prerequisites": ["Node.js 20 LTS", "Docker (for local PostgreSQL)"],
           "stepTitles": {
             "db": "Start the database",
             "backend": "Backend",

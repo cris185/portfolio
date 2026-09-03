@@ -431,6 +431,7 @@
           "El backend confía en las tiradas que le manda el frontend en vez de revalidarlas. Es un trade-off razonable para un juego local y no competitivo entre dos personas en la misma mesa, pero significa que este diseño necesitaría validación real del lado del servidor antes de poder soportar cualquier modo online o competitivo."
         ],
         "gettingStarted": {
+          "prerequisites": ["Node.js 20 LTS", "Docker (para PostgreSQL local)"],
           "stepTitles": {
             "db": "Levantar la base de datos",
             "backend": "Backend",
