@@ -1,11 +1,51 @@
 import type { Project } from "./projects";
 
-export type ProfessionalId = "thesis";
+export type ProfessionalId = "thesis" | "verifylead" | "dashboardanalytics";
 
 /** Reuses the exact same shape as a personal Project (and the same ProjectDocs component) — just under its own route and messages namespace. */
-export type ProfessionalWork = Omit<Project, "id"> & { id: ProfessionalId };
+export type ProfessionalWork = Omit<Project, "id"> & {
+  id: ProfessionalId;
+  /** Pending client/employer approval — shown in the carousel but not clickable, no detail route generated */
+  locked?: boolean;
+};
 
 export const professionalWorks: ProfessionalWork[] = [
+  {
+    id: "dashboardanalytics",
+    locked: true,
+    gradient: "linear-gradient(165deg, #101013, #16323b 85%)",
+    glow: "#8fc4d8",
+    href: "",
+    repo: "",
+    mode: "dark",
+    heroBg: "#0a0f24",
+    bodyBg: "#0e1530",
+    textPrimary: "#f1f4fc",
+    textSecondary: "#8b9bc7",
+    accentText: "#8fc4d8",
+    pillBg: "#8fc4d814",
+    pillBorder: "#8fc4d82e",
+    techStack: [],
+    hasProblem: false,
+  },
+  {
+    id: "verifylead",
+    locked: true,
+    gradient: "linear-gradient(165deg, #101013, #3d2f12 85%)",
+    glow: "#d9a441",
+    href: "",
+    repo: "",
+    mode: "dark",
+    heroBg: "#0a0f24",
+    bodyBg: "#0e1530",
+    textPrimary: "#f1f4fc",
+    textSecondary: "#8b9bc7",
+    accentText: "#d9a441",
+    pillBg: "#d9a44114",
+    pillBorder: "#d9a4412e",
+    techStack: [],
+    hasProblem: false,
+  },
   {
     id: "thesis",
     gradient: "linear-gradient(155deg, #0e2350, #1d4ed8 75%)",

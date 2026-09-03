@@ -4,11 +4,22 @@ import { useCallback, useEffect, useState } from "react";
 import NextImage from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, Lock } from "lucide-react";
 import { useCoverTransition } from "@/components/TransitionProvider";
-import { projects } from "@/lib/projects";
 
 const SPACING = 350;
+
+export interface CoverFlowItem {
+  id: string;
+  gradient: string;
+  glow: string;
+  coverImage?: string;
+  /** Shown with a lock icon instead of a placeholder image; the active card does nothing on click/Enter */
+  locked?: boolean;
+  /** Small corner badge, e.g. "Pending approval" — shown on every card, not just the active one */
+  badge?: string;
+  badgeColor?: string;
+}
 
 function slotStyle(offset: number, reduceMotion: boolean) {
   const abs = Math.abs(offset);
@@ -21,36 +32,61 @@ function slotStyle(offset: number, reduceMotion: boolean) {
   };
 }
 
-export default function CoverFlow() {
-  const t = useTranslations("home");
-  const tp = useTranslations("projects");
+export default function CoverFlow({
+  items,
+  namespace,
+  basePath,
+  storageKey,
+  ariaLabel,
+  moreSoonLabel,
+  defaultActive = 0,
+}: {
+  items: CoverFlowItem[];
+  /** Messages namespace holding `${namespace}.${id}.name` / `.tagline` */
+  namespace: string;
+  /** Route prefix an unlocked active card navigates to, e.g. "/projects" */
+  basePath: string;
+  /** sessionStorage key used to restore the active card across navigations — must be unique per carousel instance */
+  storageKey: string;
+  ariaLabel: string;
+  /** Ghost ("+ more soon") slot at the end of the shelf; omit to disable it */
+  moreSoonLabel?: string;
+  defaultActive?: number;
+}) {
+  const tp = useTranslations(namespace);
   const { navigate } = useCoverTransition();
   const reduceMotion = useReducedMotion() ?? false;
-  const [active, setActive] = useState(1); // CHOHEALTH featured by default
+  const [active, setActive] = useState(defaultActive);
+  const showMoreSoon = !!moreSoonLabel;
 
-  // Restore whichever project the visitor last had active (e.g. after visiting a
-  // detail page and coming back) instead of always resetting to CHOHEALTH.
+  // Restore whichever card the visitor last had active (e.g. after visiting a
+  // detail page and coming back) instead of always resetting to the default.
   useEffect(() => {
-    const stored = sessionStorage.getItem("cf-active-project");
+    const stored = sessionStorage.getItem(storageKey);
     if (!stored) return;
-    const idx = projects.findIndex((p) => p.id === stored);
+    const idx = items.findIndex((p) => p.id === stored);
     if (idx >= 0) setActive(idx);
-  }, []);
+  }, [storageKey, items]);
 
-  const select = useCallback((index: number) => {
-    setActive(() => {
-      const clamped = Math.max(0, Math.min(projects.length, index));
-      const project = projects[clamped];
-      if (project) sessionStorage.setItem("cf-active-project", project.id);
-      return clamped;
-    });
-  }, []);
+  const select = useCallback(
+    (index: number) => {
+      setActive(() => {
+        const max = showMoreSoon ? items.length : items.length - 1;
+        const clamped = Math.max(0, Math.min(max, index));
+        const item = items[clamped];
+        if (item) sessionStorage.setItem(storageKey, item.id);
+        return clamped;
+      });
+    },
+    [items, storageKey, showMoreSoon]
+  );
 
   const openActive = useCallback(() => {
-    if (active >= projects.length) return; // "more soon" ghost slot
-    const project = projects[active];
-    navigate(`/projects/${project.id}`, project.glow);
-  }, [active, navigate]);
+    if (active >= items.length) return; // "more soon" ghost slot
+    const item = items[active];
+    if (item.locked) return;
+    navigate(`${basePath}/${item.id}`, item.glow);
+  }, [active, items, basePath, navigate]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -67,7 +103,7 @@ export default function CoverFlow() {
     return () => window.removeEventListener("keydown", onKey);
   }, [active, select, openActive]);
 
-  const activeProject = active < projects.length ? projects[active] : null;
+  const activeItem = active < items.length ? items[active] : null;
 
   return (
     <div className="relative flex flex-col items-center">
@@ -76,7 +112,7 @@ export default function CoverFlow() {
         aria-hidden
         className="pointer-events-none absolute -top-16 left-1/2 h-[700px] w-[900px] -translate-x-1/2 rounded-full blur-3xl"
         animate={{
-          background: `radial-gradient(ellipse, ${activeProject?.glow ?? "#d9a441"}3d 0%, transparent 65%)`,
+          background: `radial-gradient(ellipse, ${activeItem?.glow ?? "#d9a441"}3d 0%, transparent 65%)`,
         }}
         transition={{ duration: 0.5 }}
       />
@@ -90,10 +126,10 @@ export default function CoverFlow() {
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           className="inline-block -skew-x-[8deg] font-display text-6xl font-bold tracking-tight text-foreground sm:text-8xl"
         >
-          {activeProject ? tp(`${activeProject.id}.name`) : t("moreSoon")}
+          {activeItem ? tp(`${activeItem.id}.name`) : moreSoonLabel}
         </motion.h1>
         <p className="mt-3 font-mono text-xs tracking-[0.1em] text-[color:var(--chohealth-3)] sm:text-sm">
-          {activeProject ? tp(`${activeProject.id}.tagline`).toUpperCase() : ""}
+          {activeItem && tp.has(`${activeItem.id}.tagline`) ? tp(`${activeItem.id}.tagline`).toUpperCase() : ""}
         </p>
       </div>
 
@@ -102,33 +138,27 @@ export default function CoverFlow() {
         className="relative mt-8 h-[380px] w-full"
         style={{ perspective: 1600 }}
         role="listbox"
-        aria-label={t("sectionLabel")}
+        aria-label={ariaLabel}
       >
-        {projects.map((project, i) => {
+        {items.map((item, i) => {
           const offset = i - active;
           if (Math.abs(offset) > 2) return null;
           const s = slotStyle(offset, reduceMotion);
           return (
             <motion.button
-              key={project.id}
+              key={item.id}
               type="button"
               role="option"
               aria-selected={offset === 0}
-              aria-label={tp(`${project.id}.name`)}
+              aria-label={tp(`${item.id}.name`)}
               onClick={() => (offset === 0 ? openActive() : select(i))}
               className="absolute left-1/2 top-1/2 h-[380px] w-[300px] cursor-pointer overflow-hidden rounded-md border border-white/10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
-              style={{ background: project.gradient, marginLeft: -150, marginTop: -190 }}
+              style={{ background: item.gradient, marginLeft: -150, marginTop: -190 }}
               animate={{ x: s.x, rotateY: s.rotateY, scale: s.scale, opacity: s.opacity, zIndex: s.zIndex }}
               transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
             >
-              {project.coverImage ? (
-                <NextImage
-                  src={project.coverImage}
-                  alt={tp(`${project.id}.name`)}
-                  fill
-                  className="object-cover"
-                  sizes="300px"
-                />
+              {item.coverImage ? (
+                <NextImage src={item.coverImage} alt={tp(`${item.id}.name`)} fill className="object-cover" sizes="300px" />
               ) : (
                 <>
                   <div
@@ -141,18 +171,26 @@ export default function CoverFlow() {
                     }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center opacity-15">
-                    <ImageIcon size={44} className="text-white" />
+                    {item.locked ? <Lock size={40} className="text-white" /> : <ImageIcon size={44} className="text-white" />}
                   </div>
                 </>
               )}
+              {item.badge && (
+                <span
+                  className="absolute right-3 top-3 rounded-full px-2.5 py-1 font-mono text-[10px]"
+                  style={{
+                    color: item.badgeColor,
+                    background: `${item.badgeColor}1a`,
+                    border: `1px solid ${item.badgeColor}3a`,
+                  }}
+                >
+                  {item.badge}
+                </span>
+              )}
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 pt-10 text-left">
-                <div className="font-mono text-xs tracking-wide text-white/95">
-                  {tp(`${project.id}.name`).toUpperCase()}
-                </div>
-                {offset === 0 && (
-                  <div className="mt-1 font-mono text-[10px] leading-snug text-white/60">
-                    {tp(`${project.id}.tagline`)}
-                  </div>
+                <div className="font-mono text-xs tracking-wide text-white/95">{tp(`${item.id}.name`).toUpperCase()}</div>
+                {offset === 0 && tp.has(`${item.id}.tagline`) && (
+                  <div className="mt-1 font-mono text-[10px] leading-snug text-white/60">{tp(`${item.id}.tagline`)}</div>
                 )}
               </div>
             </motion.button>
@@ -160,31 +198,30 @@ export default function CoverFlow() {
         })}
 
         {/* ghost "more soon" slot */}
-        {(() => {
-          const offset = projects.length - active;
-          if (Math.abs(offset) > 2) return null;
-          const s = slotStyle(offset, reduceMotion);
-          return (
-            <motion.button
-              type="button"
-              role="option"
-              aria-selected={offset === 0}
-              aria-label={t("moreSoon")}
-              onClick={() => select(projects.length)}
-              className="absolute left-1/2 top-1/2 flex h-[380px] w-[300px] items-center justify-center rounded-md border border-dashed border-white/20 bg-surface text-muted"
-              style={{ marginLeft: -150, marginTop: -190 }}
-              animate={{ x: s.x, rotateY: s.rotateY, scale: s.scale, opacity: s.opacity * 0.9, zIndex: s.zIndex }}
-              transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <div className="text-center">
-                <div className="text-2xl leading-none">+</div>
-                <div className="mt-1.5 font-mono text-[10px] tracking-[0.08em]">
-                  {t("moreSoon").toUpperCase()}
+        {showMoreSoon &&
+          (() => {
+            const offset = items.length - active;
+            if (Math.abs(offset) > 2) return null;
+            const s = slotStyle(offset, reduceMotion);
+            return (
+              <motion.button
+                type="button"
+                role="option"
+                aria-selected={offset === 0}
+                aria-label={moreSoonLabel}
+                onClick={() => select(items.length)}
+                className="absolute left-1/2 top-1/2 flex h-[380px] w-[300px] items-center justify-center rounded-md border border-dashed border-white/20 bg-surface text-muted"
+                style={{ marginLeft: -150, marginTop: -190 }}
+                animate={{ x: s.x, rotateY: s.rotateY, scale: s.scale, opacity: s.opacity * 0.9, zIndex: s.zIndex }}
+                transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="text-center">
+                  <div className="text-2xl leading-none">+</div>
+                  <div className="mt-1.5 font-mono text-[10px] tracking-[0.08em]">{moreSoonLabel?.toUpperCase()}</div>
                 </div>
-              </div>
-            </motion.button>
-          );
-        })()}
+              </motion.button>
+            );
+          })()}
       </div>
     </div>
   );

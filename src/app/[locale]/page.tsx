@@ -5,6 +5,7 @@ import Hero from "@/components/Hero";
 import CoverFlow from "@/components/CoverFlow";
 import ProfessionalSection from "@/components/ProfessionalSection";
 import TerminalSection from "@/components/TerminalSection";
+import { projects } from "@/lib/projects";
 
 export default async function HomePage() {
   const t = await getTranslations("home");
@@ -48,7 +49,15 @@ export default async function HomePage() {
         </div>
 
         <div id="projects" className="relative z-10 flex flex-1 items-center justify-center px-4 py-10">
-          <CoverFlow />
+          <CoverFlow
+            items={projects.map((p) => ({ id: p.id, gradient: p.gradient, glow: p.glow, coverImage: p.coverImage }))}
+            namespace="projects"
+            basePath="/projects"
+            storageKey="cf-active-project"
+            ariaLabel={t("sectionLabel")}
+            moreSoonLabel={t("moreSoon")}
+            defaultActive={1}
+          />
         </div>
 
         <HudBar />

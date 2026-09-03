@@ -8,7 +8,7 @@ import BackLink from "@/components/BackLink";
 import ProjectDocs from "@/components/ProjectDocs";
 
 export function generateStaticParams() {
-  return professionalWorks.map((p) => ({ id: p.id }));
+  return professionalWorks.filter((p) => !p.locked).map((p) => ({ id: p.id }));
 }
 
 export default async function ProfessionalDetailPage({
@@ -18,7 +18,7 @@ export default async function ProfessionalDetailPage({
 }) {
   const { id } = await params;
   const work = getProfessionalWork(id);
-  if (!work) notFound();
+  if (!work || work.locked) notFound();
 
   const t = await getTranslations("projectPage");
   const tp = await getTranslations(`professional.${work.id}`);

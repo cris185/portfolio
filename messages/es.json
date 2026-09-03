@@ -522,6 +522,7 @@
     "readPaper": "Leer el artículo",
     "thesis": {
       "name": "AI-JobMatch",
+      "tagline": "Videopresentaciones evaluadas con IA, contra la vacante correcta",
       "role": "Proyecto de Grado — Feb–Nov 2023",
       "category": "Proyecto de Grado — Universidad Tecnológica de Bolívar",
       "university": "Universidad Tecnológica de Bolívar",
@@ -634,11 +635,13 @@
     },
     "verifylead": {
       "name": "Verify Lead",
+      "tagline": "Calificación de leads para un equipo de ventas de 40+ personas",
       "role": "Rol — Backend Developer",
       "description": "Plataforma de calificación de leads usada por un equipo de ventas de más de 40 personas — API, pipeline de datos y lógica de verificación. Capturas y un link en vivo vienen en camino, pendiente de aprobación."
     },
     "dashboardanalytics": {
       "name": "Dashboard Analytics",
+      "tagline": "Agenda, personal y reportes para un negocio de bienestar",
       "role": "Rol — Full Stack Developer",
       "description": "Sistema de gestión para un negocio de spa/bienestar — agenda, personal y reportes en un solo dashboard."
     }
