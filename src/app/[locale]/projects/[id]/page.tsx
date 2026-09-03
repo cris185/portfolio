@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { ArrowUpRight, Check } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { getProject, projects, type ProjectId } from "@/lib/projects";
 import BackLink from "@/components/BackLink";
+import ProjectGallery from "@/components/ProjectGallery";
 
 export function generateStaticParams() {
   return projects.map((p) => ({ id: p.id }));
@@ -138,16 +138,14 @@ export default async function ProjectDetailPage({
               {new URL(project.href).host}
             </span>
           </div>
-          {project.detailImage ? (
-            <div className="relative overflow-hidden rounded-lg" style={{ aspectRatio: "16 / 8" }}>
-              <Image
-                src={project.detailImage}
-                alt={`${tp("name")} screenshot`}
-                fill
-                className="object-cover object-top"
-                sizes="(max-width: 900px) 100vw, 900px"
-              />
-            </div>
+          {project.screenshots && project.screenshots.length > 0 ? (
+            <ProjectGallery
+              screenshots={project.screenshots}
+              alt={tp("name")}
+              accentText={project.accentText}
+              pillBorder={project.pillBorder}
+              isDark={isDark}
+            />
           ) : (
             <div
               className="flex h-72 gap-4 rounded-lg p-5"

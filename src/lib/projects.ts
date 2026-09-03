@@ -5,9 +5,10 @@ export interface Project {
   gradient: string;
   glow: string;
   href: string;
-  /** Card thumbnail (portrait) and wide detail-page screenshot, served from MinIO */
+  /** Card thumbnail (portrait), served from MinIO */
   coverImage?: string;
-  detailImage?: string;
+  /** Gallery of wide screenshots for the detail page, served from MinIO */
+  screenshots?: { label: string; src: string }[];
   mode: "light" | "dark";
   /** Hero band background (top of the detail page, before the diagonal seam) */
   heroBg: string;
@@ -49,7 +50,12 @@ export const projects: Project[] = [
     glow: "var(--chohealth-2)",
     href: "https://chohealth.cristianpuentes.com",
     coverImage: "https://minio-api.cristianpuentes.com/portfolio-media/covers/chohealth-card.jpg",
-    detailImage: "https://minio-api.cristianpuentes.com/portfolio-media/covers/chohealth-detail.jpg",
+    screenshots: [
+      { label: "Services", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/chohealth-services.jpg" },
+      { label: "Patient Dashboard", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/chohealth-patient.jpg" },
+      { label: "Doctor Dashboard", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/chohealth-doctor.jpg" },
+      { label: "Appointments", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/chohealth-appointments.jpg" },
+    ],
     mode: "light",
     heroBg: "#0b1b3a",
     bodyBg: "#eaf2ff",
