@@ -146,6 +146,7 @@ export default function ProjectDocs({
   const limitations = safeRaw(tp, "docs.limitations", [] as string[]);
   const roadmap = safeRaw(tp, "docs.roadmap", [] as string[]);
   const schemaDiagramTitles = safeRaw(tp, "docs.schemaDiagramTitles", {} as Record<string, string>);
+  const entityGlossary = safeRaw(tp, "docs.entityGlossary", [] as { entity: string; purpose: string }[]);
   const dataFlowTitles = safeRaw(tp, "docs.dataFlowTitles", {} as Record<string, string>);
   const securitySteps = safeRaw(tp, "docs.security.steps", [] as string[]);
   const modelSpecs = safeRaw(tp, "docs.model.specs", [] as { param: string; value: string }[]);
@@ -156,7 +157,8 @@ export default function ProjectDocs({
   );
   const gettingStarted = safeRaw(tp, "docs.gettingStarted", {
     prerequisites: [] as string[],
-    backendNote: "",
+    stepTitles: {} as Record<string, string>,
+    stepNotes: {} as Record<string, string>,
     closingNote: "",
   });
 
@@ -523,9 +525,29 @@ export default function ProjectDocs({
           {activeTab === "schema" && !!docs.schemaDiagrams?.length && (
             <div>
               <SectionLabel color={accentText}>{t("databaseSchema")}</SectionLabel>
-              <p className="mb-6 max-w-2xl text-[13px] leading-relaxed" style={{ color: textSecondary }}>
-                {safeT(tp, "docs.schemaIntro")}
-              </p>
+              {safeT(tp, "docs.schemaIntro") && (
+                <p className="mb-6 max-w-2xl text-[13px] leading-relaxed" style={{ color: textSecondary }}>
+                  {safeT(tp, "docs.schemaIntro")}
+                </p>
+              )}
+
+              {entityGlossary.length > 0 && (
+                <div className="mb-8 overflow-hidden rounded-lg" style={{ border: `1px solid ${pillBorder}` }}>
+                  {entityGlossary.map((row, i) => (
+                    <div
+                      key={row.entity}
+                      className="flex gap-4 px-4 py-2.5 text-[12.5px]"
+                      style={{ borderTop: i === 0 ? "none" : `1px solid ${pillBorder}` }}
+                    >
+                      <div className="w-32 shrink-0 font-mono" style={{ color: accentText }}>
+                        {row.entity}
+                      </div>
+                      <div style={{ color: textSecondary }}>{row.purpose}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex flex-col gap-8">
                 {docs.schemaDiagrams.map((d) => (
                   <div key={d.key}>
@@ -538,9 +560,11 @@ export default function ProjectDocs({
                   </div>
                 ))}
               </div>
-              <p className="mt-6 max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
-                {safeT(tp, "docs.schemaNote")}
-              </p>
+              {safeT(tp, "docs.schemaNote") && (
+                <p className="mt-6 max-w-2xl text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
+                  {safeT(tp, "docs.schemaNote")}
+                </p>
+              )}
             </div>
           )}
 
@@ -672,41 +696,51 @@ export default function ProjectDocs({
             <div>
               <SectionLabel color={accentText}>{t("gettingStartedTitle")}</SectionLabel>
 
-              <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
-                {t("prerequisites")}
-              </div>
-              <ul className="mb-8 flex flex-col gap-1.5">
-                {gettingStarted.prerequisites.map((p, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
-                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full" style={{ background: accentText }} />
-                    <span>{p}</span>
-                  </li>
+              {gettingStarted.prerequisites.length > 0 && (
+                <>
+                  <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                    {t("prerequisites")}
+                  </div>
+                  <ul className="mb-8 flex flex-col gap-1.5">
+                    {gettingStarted.prerequisites.map((p, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-[12.5px] leading-relaxed" style={{ color: textSecondary }}>
+                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full" style={{ background: accentText }} />
+                        <span>{p}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              <div className="flex flex-col gap-8">
+                {docs.gettingStarted.steps.map((step) => (
+                  <div key={step.key}>
+                    <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
+                      {gettingStarted.stepTitles[step.key] ?? step.key}
+                    </div>
+                    {step.commands && <CodeBlock code={step.commands} isDark={isDark} pillBorder={pillBorder} />}
+                    {step.env && (
+                      <>
+                        <div className="mt-4 mb-2.5 text-[12px] font-medium" style={{ color: textSecondary }}>
+                          {t("envVars")}
+                        </div>
+                        <CodeBlock code={step.env} isDark={isDark} pillBorder={pillBorder} />
+                      </>
+                    )}
+                    {gettingStarted.stepNotes[step.key] && (
+                      <p className="mt-3 text-[12px]" style={{ color: textSecondary }}>
+                        {gettingStarted.stepNotes[step.key]}
+                      </p>
+                    )}
+                  </div>
                 ))}
-              </ul>
+              </div>
 
-              <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
-                {t("backendSetup")}
-              </div>
-              <CodeBlock code={docs.gettingStarted.backendCommands} isDark={isDark} pillBorder={pillBorder} />
-              <div className="mt-4 mb-2.5 text-[12px] font-medium" style={{ color: textSecondary }}>
-                {t("envVars")}
-              </div>
-              <CodeBlock code={docs.gettingStarted.backendEnv} isDark={isDark} pillBorder={pillBorder} />
-              <p className="mt-3 mb-8 text-[12px]" style={{ color: textSecondary }}>
-                {gettingStarted.backendNote}
-              </p>
-
-              <div className="mb-2.5 text-[13px] font-semibold" style={{ color: textPrimary }}>
-                {t("frontendSetup")}
-              </div>
-              <CodeBlock code={docs.gettingStarted.frontendCommands} isDark={isDark} pillBorder={pillBorder} />
-              <div className="mt-4 mb-2.5 text-[12px] font-medium" style={{ color: textSecondary }}>
-                {t("envVars")}
-              </div>
-              <CodeBlock code={docs.gettingStarted.frontendEnv} isDark={isDark} pillBorder={pillBorder} />
-              <p className="mt-3 text-[12px]" style={{ color: textSecondary }}>
-                {gettingStarted.closingNote}
-              </p>
+              {gettingStarted.closingNote && (
+                <p className="mt-8 text-[12px]" style={{ color: textSecondary }}>
+                  {gettingStarted.closingNote}
+                </p>
+              )}
             </div>
           )}
         </div>

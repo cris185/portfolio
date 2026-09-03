@@ -187,7 +187,8 @@
             "API keys de Stripe, PayPal, Cloudinary y SendGrid",
             "PostgreSQL (opcional en local — si DATABASE_URL no está definida, cae a SQLite)"
           ],
-          "backendNote": "La API queda disponible en http://127.0.0.1:8000/api/, el admin en http://127.0.0.1:8000/admin/.",
+          "stepTitles": { "backend": "Backend", "frontend": "Frontend" },
+          "stepNotes": { "backend": "La API queda disponible en http://127.0.0.1:8000/api/, el admin en http://127.0.0.1:8000/admin/." },
           "closingNote": "El frontend queda disponible en http://localhost:3000. Corre backend y frontend en dos terminales — el frontend depende de la API para todo (autenticación, citas, pagos, etc.)."
         }
       },
@@ -221,7 +222,66 @@
         "Sincronización opcional con Google Calendar vía OAuth 2.0, siempre con confirmación explícita antes de escribir un evento",
         "API keys y refresh tokens cifrados en reposo con AES-256-GCM — nunca se envían de vuelta al frontend",
         "PWA instalable con página offline y un service worker que nunca cachea las rutas de la API"
-      ]
+      ],
+      "docs": {
+        "problemLong": "CHO Planner es un gestor de tareas y notas al estilo de Linear o ClickUp, pero deliberadamente más simple, construido alrededor de un asistente de IA personalizable — con su propio avatar, nombre y personalidad — que descompone objetivos en subtareas con pesos y, opcionalmente, sincroniza el trabajo con Google Calendar. El diseño descansa en cuatro principios: local-first (la app funciona 100% sin servicios externos; las integraciones son aditivas, nunca obligatorias), Bring Your Own Keys (cada usuario aporta sus propias credenciales — cuenta de Google, API key del LLM — guardadas cifradas, así que el operador nunca es custodio de credenciales de terceros), responsive mobile-first (un solo código web que se adapta a celular, tablet y escritorio, sin puerto nativo), e IA intercambiable (el usuario elige el proveedor — Claude, GPT, Gemini — y cambiar de modelo cambia la redacción, nunca la estructura de lo que se genera).",
+        "decisions": [
+          { "title": "La salida de la IA nunca se confía directamente — llena un esquema Zod definido en código, validado con reintentos", "rationale": "El modelo nunca decide el formato ni ejecuta acciones directamente: solo llena una estructura definida en código. El código valida la salida contra ese esquema antes de usarla y, si no cumple, reintenta reinyectando el error de validación (máximo 3 intentos) — esto garantiza que un roadmap generado por Gemini tenga exactamente los mismos campos que uno de Claude." },
+          { "title": "Un MODEL_REGISTRY declara el nivel de soporte de salida estructurada de cada modelo (full / partial)", "rationale": "No todos los LLM son igual de confiables devolviendo datos estructurados. Declarar ese nivel de soporte en un solo lugar hace que la UI solo ofrezca para generación los modelos que realmente se sabe que cumplen, en vez de dejar que un usuario elija uno que va a producir planes mal formados en silencio." },
+          { "title": "Las API keys y refresh tokens se cifran con AES-256-GCM y nunca llegan al frontend", "rationale": "La filosofía BYOK solo se sostiene si las credenciales están realmente protegidas — el chat y la generación corren enteramente en el servidor, así que un frontend comprometido no puede filtrar una key que nunca tuvo." },
+          { "title": "Los envíos a Google Calendar siempre requieren confirmación explícita antes de escribir un evento", "rationale": "Automatizar una escritura en el calendario real de un usuario sin confirmación es el tipo de integración que erosiona la confianza la primera vez que hace algo inesperado — el asistente propone, el usuario decide." },
+          { "title": "La apariencia del asistente se guarda como JSON (avatarConfig), no como columnas rígidas", "rationale": "Los parámetros del avatar varían según la librería (cada estilo de DiceBear tiene rasgos configurables distintos); una tabla rígida forzaría una migración de esquema cada vez que cambia un estilo de avatar." },
+          { "title": "Task separa title (qué) de description (cómo); Subtask se mantiene deliberadamente liviana", "rationale": "Una tarea necesita tanto un objetivo como un plan para alcanzarlo. Una subtarea busca ser un ítem de checklist atómico — si una subtarea necesita una descripción larga, es señal de que debería ser una tarea propia." },
+          { "title": "CalendarEvent es su propia tabla, reutilizable entre Task, Sprint y Note", "rationale": "Los tres tipos de entidad pueden sincronizarse con Google Calendar y necesitan rastrear un googleEventId para actualizar o eliminar después ese mismo evento — modelarlo una sola vez como tabla compartida evita triplicar esa lógica de sincronización." }
+        ],
+        "architectureNote": "Todo vive dentro de Next.js — Server Actions y Route Handlers — no hay un servidor backend separado. La instancia es autocontenida: cualquiera puede clonar el repositorio, configurar el .env, levantar Postgres con Docker, y tener un gestor de tareas completamente funcional sin ningún servicio externo. Google Calendar y el proveedor de LLM son extensiones opcionales, que se conectan solo cuando el usuario aporta sus propias credenciales.",
+        "dataFlowTitles": {
+          "aiGeneration": "Flujo de generación con IA"
+        },
+        "schemaIntro": "El modelo gira alrededor de User, dueño de todo en cascada. Diez entidades cubren identidad, contenido e integraciones.",
+        "schemaDiagramTitles": {
+          "main": "Modelo de datos"
+        },
+        "entityGlossary": [
+          { "entity": "User", "purpose": "Cuenta. firstName/lastName separados para el saludo personalizado." },
+          { "entity": "Assistant", "purpose": "Identidad del asistente de IA: nombre, estilo de avatar, avatarConfig (JSON), y persona." },
+          { "entity": "ApiKey", "purpose": "Una API key de un proveedor de LLM, cifrada (AES-256-GCM). Única por (userId, provider)." },
+          { "entity": "GoogleAccount", "purpose": "Vínculo OAuth: refresh token cifrado, scope, calendarId, y syncToken." },
+          { "entity": "Workspace", "purpose": "Contenedor de trabajo con nombre, descripción, color e ícono." },
+          { "entity": "Sprint", "purpose": "Agrupación de tareas acotada en el tiempo, con un objetivo y fechas." },
+          { "entity": "Task", "purpose": "title (qué) + description (cómo), weight 1–10, status, aiGenerated, y position." },
+          { "entity": "Subtask", "purpose": "Unidad atómica liviana: title + nota corta + weight + done." },
+          { "entity": "Note", "purpose": "Nota en Markdown, ligada a un workspace o independiente, con recordatorio opcional." },
+          { "entity": "CalendarEvent", "purpose": "Evento reutilizable por Task, Sprint o Note; guarda el googleEventId para actualizar/eliminar en Google." }
+        ],
+        "roadmap": [
+          "Base: Next.js + Prisma + Postgres + Auth.js",
+          "Workspaces y tareas con un board Kanban",
+          "Drag and drop con persistencia de orden",
+          "Subtareas, sprints y notas",
+          "Asistente de IA multi-proveedor con salida validada",
+          "Avatar y persona del asistente",
+          "Integración con Google Calendar",
+          "Pulido responsive y datos de ejemplo",
+          "PWA: instalable, con service worker y página offline"
+        ],
+        "gettingStarted": {
+          "prerequisites": ["Node.js 20+", "Docker Desktop (para la base de datos local)"],
+          "stepTitles": {
+            "install": "Clonar e instalar",
+            "env": "Configurar variables de entorno",
+            "db": "Levantar la base de datos",
+            "schema": "Aplicar el esquema y cargar datos de ejemplo",
+            "dev": "Correr en desarrollo"
+          },
+          "stepNotes": {
+            "env": "El archivo .env está en .gitignore y nunca debe subirse. Las API keys de cada usuario no van aquí — se capturan dentro de la app y se guardan cifradas en la base de datos.",
+            "db": "El contenedor publica Postgres en el puerto 5433 del host para no chocar con una instalación nativa en el 5432. Si cambias el puerto, actualiza DATABASE_URL.",
+            "schema": "El seed crea un usuario de prueba: demo@choplanner.local / demo1234."
+          },
+          "closingNote": "Abre http://localhost:3000, regístrate o inicia sesión con la cuenta demo, y empieza a crear workspaces y tareas. La IA y Google Calendar funcionan en cuanto agregues tus propias credenciales en Ajustes."
+        }
+      }
     },
     "neurostock": {
       "name": "Neurostock",
@@ -308,7 +368,8 @@
         ],
         "gettingStarted": {
           "prerequisites": ["Python 3.12+", "Node.js 18+", "npm o yarn"],
-          "backendNote": "La API del backend queda disponible en http://127.0.0.1:8000/api/v1/.",
+          "stepTitles": { "backend": "Backend", "frontend": "Frontend" },
+          "stepNotes": { "backend": "La API del backend queda disponible en http://127.0.0.1:8000/api/v1/." },
           "closingNote": "El frontend queda disponible en http://localhost:5173. Ingresa un ticker (ej. AAPL, TSLA) en el dashboard para ver el backtesting y un pronóstico futuro con intervalos de confianza."
         }
       }

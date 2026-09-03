@@ -58,11 +58,9 @@ export interface Project {
     modelCodeSnippet?: string;
     apiExampleRequest?: string;
     apiExampleResponse?: string;
+    /** Ordered setup steps; `key` looks up the translated title/note in `docs.gettingStarted.stepTitles`/`stepNotes` */
     gettingStarted?: {
-      backendCommands: string;
-      backendEnv: string;
-      frontendCommands: string;
-      frontendEnv: string;
+      steps: { key: string; commands?: string; env?: string }[];
     };
   };
 }
@@ -349,7 +347,10 @@ export const projects: Project[] = [
         },
       ],
       gettingStarted: {
-        backendCommands: `cd backend\\CHOHEALT_BACK
+        steps: [
+          {
+            key: "backend",
+            commands: `cd backend\\CHOHEALT_BACK
 
 python -m venv venv
 .\\venv\\Scripts\\Activate.ps1
@@ -361,7 +362,7 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py createsuperuser   # optional, for /admin
 python manage.py runserver`,
-        backendEnv: `SECRET_KEY=
+            env: `SECRET_KEY=
 DEBUG=True
 ALLOWED_HOSTS=
 CORS_ALLOWED_ORIGINS=http://localhost:3000
@@ -388,12 +389,17 @@ PAYPAL_MODE=sandbox            # or "live"
 SENDGRID_API_KEY=
 DEFAULT_FROM_EMAIL=
 EMAIL_DOMAIN=`,
-        frontendCommands: `cd frontend
+          },
+          {
+            key: "frontend",
+            commands: `cd frontend
 npm install
 npm run dev`,
-        frontendEnv: `NEXT_PUBLIC_API_URL=http://localhost:8000/api
+            env: `NEXT_PUBLIC_API_URL=http://localhost:8000/api
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
+          },
+        ],
       },
     },
   },
@@ -416,6 +422,192 @@ NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
     hasProblem: true,
     demoAccounts: {
       accounts: [{ label: "Demo", identifierLabel: "Email", identifier: "demo@choplanner.local", password: "demo1234" }],
+    },
+    docs: {
+      fullStack: [
+        { layer: "Next.js 16 (App Router)", tech: "React 19, TypeScript — framework and typing" },
+        { layer: "Tailwind CSS 4", tech: "Mobile-first responsive styling" },
+        { layer: "shadcn/ui + Radix UI", tech: "Accessible, headless component primitives" },
+        { layer: "dnd-kit", tech: "Drag and drop with touch sensors" },
+        { layer: "next-themes", tech: "Light/dark mode without flicker" },
+        { layer: "DiceBear", tech: "Assistant avatar generation" },
+        { layer: "react-markdown + remark-gfm", tech: "Markdown rendering for notes" },
+        { layer: "PWA", tech: "Web App Manifest + service worker, installable with offline support" },
+        { layer: "Server Actions", tech: "CRUD for all entities" },
+        { layer: "Route Handlers", tech: "Chat streaming, Google OAuth callback, sync" },
+        { layer: "Prisma 6", tech: "ORM" },
+        { layer: "PostgreSQL 17", tech: "Database" },
+        { layer: "Auth.js (NextAuth v5)", tech: "Credentials-based authentication" },
+        { layer: "bcryptjs", tech: "Password hashing" },
+        { layer: "Vercel AI SDK", tech: "Single multi-provider adapter (Claude, GPT, Gemini)" },
+        { layer: "Zod", tech: "Structured-output contract and validation" },
+        { layer: "googleapis", tech: "OAuth 2.0 with incremental syncToken" },
+        { layer: "AES-256-GCM", tech: "Encryption of API keys and refresh tokens at rest" },
+        { layer: "Docker Compose", tech: "Local Postgres for development" },
+      ],
+      architectureDiagram: `flowchart LR
+    subgraph instance["Your instance — works with nothing external"]
+        NEXT["Next.js<br/>UI + API (RSC, Server Actions)"]
+        DB[("PostgreSQL<br/>your data")]
+        VAULT["Credentials vault<br/>API keys + refresh tokens<br/>AES-256-GCM, never leave the instance"]
+        NEXT --> DB
+        NEXT --> VAULT
+    end
+
+    GCAL[["Google Calendar<br/>optional · OAuth 2.0"]]
+    LLM[["LLM provider<br/>optional · your key<br/>Claude / GPT / Gemini"]]
+
+    instance -.->|"optional"| GCAL
+    instance -.->|"optional"| LLM`,
+      architectureTree: [
+        {
+          name: "cho-planner/",
+          children: [
+            {
+              name: "prisma/",
+              children: [
+                { name: "schema.prisma", comment: "10 models + TaskStatus enum" },
+                { name: "seed.ts", comment: "sample data (demo user)" },
+              ],
+            },
+            {
+              name: "src/",
+              children: [
+                {
+                  name: "app/",
+                  children: [
+                    { name: "(auth)/", comment: "login and registration" },
+                    { name: "(dashboard)/", comment: "board, sprints, notes, chat, settings" },
+                    { name: "api/", comment: "chat (streaming), google (OAuth), calendar (sync)" },
+                  ],
+                },
+                { name: "components/", comment: "ui, board, chat, assistant, note" },
+                {
+                  name: "lib/",
+                  children: [
+                    { name: "crypto.ts", comment: "AES-256-GCM encrypt/decrypt" },
+                    { name: "ai/", comment: "registry, schemas (Zod), generate, provider" },
+                    { name: "google/", comment: "oauth, calendar" },
+                  ],
+                },
+                { name: "server/actions/", comment: "Server Actions (CRUD per entity)" },
+                { name: "validations/", comment: "input schemas" },
+              ],
+            },
+            { name: "docker-compose.yml", comment: "local Postgres" },
+            { name: ".env.example", comment: "variables template (no secrets)" },
+            { name: "package.json" },
+          ],
+        },
+      ],
+      dataFlows: [
+        {
+          key: "aiGeneration",
+          mermaid: `flowchart TD
+    A["App defines the contract<br/>(prompt + Zod schema)"] --> B["Single adapter (Vercel AI SDK)"]
+    B --> C1["Claude — native tool use"]
+    B --> C2["GPT — structured outputs"]
+    B --> C3["Gemini — response schema"]
+    C1 --> D{"Validate against<br/>the Zod schema"}
+    C2 --> D
+    C3 --> D
+    D -->|"invalid"| E["Retry — max 3<br/>re-inject the validation error"]
+    E --> B
+    D -->|"valid"| F["Structurally identical data"]
+    F --> G[("Database")]
+    F --> H["Board UI"]
+    F --> I["Google Calendar"]`,
+        },
+      ],
+      schemaDiagrams: [
+        {
+          key: "main",
+          mermaid: `erDiagram
+    User ||--o| Assistant : has
+    User ||--o{ Workspace : owns
+    User ||--o{ Note : writes
+    User ||--o{ ApiKey : configures
+    User ||--o| GoogleAccount : connects
+    Workspace ||--o{ Task : contains
+    Workspace ||--o{ Sprint : contains
+    Workspace ||--o{ Note : groups
+    Sprint ||--o{ Task : groups
+    Task ||--o{ Subtask : "breaks down"
+    Task ||--o| CalendarEvent : syncs
+    Sprint ||--o| CalendarEvent : syncs
+    Note ||--o| CalendarEvent : syncs
+
+    User {
+        string id PK
+        string email UK
+        string firstName
+        string lastName
+        string defaultProvider
+    }
+    Task {
+        string id PK
+        string title
+        string description
+        int weight
+        enum status
+        boolean aiGenerated
+        int position
+        datetime dueDate
+    }
+    Subtask {
+        string id PK
+        string title
+        string note
+        int weight
+        boolean done
+    }
+    CalendarEvent {
+        string id PK
+        string googleEventId UK
+        datetime startsAt
+        boolean synced
+    }`,
+        },
+      ],
+      gettingStarted: {
+        steps: [
+          {
+            key: "install",
+            commands: `git clone https://github.com/cris185/cho-planner.git
+cd cho-planner
+npm install`,
+          },
+          {
+            key: "env",
+            commands: `cp .env.example .env`,
+            env: `DATABASE_URL=postgresql://taskmanager:taskmanager@localhost:5433/taskmanager
+
+AUTH_SECRET=                  # openssl rand -base64 32
+AUTH_URL=http://localhost:3000
+
+ENCRYPTION_KEY=                # node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+GOOGLE_CLIENT_ID=              # optional — Google Calendar
+GOOGLE_CLIENT_SECRET=
+
+DEFAULT_LLM_PROVIDER=          # optional — default demo LLM
+DEFAULT_LLM_API_KEY=`,
+          },
+          {
+            key: "db",
+            commands: `docker compose up -d`,
+          },
+          {
+            key: "schema",
+            commands: `npx prisma migrate dev      # creates the tables
+npm run db:seed             # loads a sample workspace (optional)`,
+          },
+          {
+            key: "dev",
+            commands: `npm run dev`,
+          },
+        ],
+      },
     },
   },
   {
@@ -770,7 +962,10 @@ test_scaled = train_scaler.transform(test_data)`,
     }
 }`,
       gettingStarted: {
-        backendCommands: `python -m venv env
+        steps: [
+          {
+            key: "backend",
+            commands: `python -m venv env
 
 # Windows
 .\\env\\Scripts\\Activate.ps1
@@ -785,16 +980,21 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py createsuperuser   # optional, for /admin
 python manage.py runserver`,
-        backendEnv: `SECRET_KEY=your-secret-key-here
+            env: `SECRET_KEY=your-secret-key-here
 DEBUG=False
 ALLOWED_HOSTS=localhost,127.0.0.1`,
-        frontendCommands: `cd frontend-react
+          },
+          {
+            key: "frontend",
+            commands: `cd frontend-react
 npm install
 
 # create frontend-react/.env — see variables below
 
 npm run dev`,
-        frontendEnv: `VITE_BACKEND_BASE_API=http://127.0.0.1:8000/api/v1`,
+            env: `VITE_BACKEND_BASE_API=http://127.0.0.1:8000/api/v1`,
+          },
+        ],
       },
     },
   },
