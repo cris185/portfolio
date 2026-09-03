@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import { useRouter } from "@/i18n/navigation";
 
@@ -29,6 +29,15 @@ export default function TransitionProvider({ children }: { children: React.React
   const reduceMotion = useReducedMotion() ?? false;
   const [phase, setPhase] = useState<"idle" | "covering" | "revealing">("idle");
   const [color, setColor] = useState(PORTFOLIO_AMBER);
+
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+    if (!window.location.hash) {
+      window.scrollTo(0, 0);
+    }
+  }, []);
 
   const navigate = useCallback(
     (href: string, destColor: string) => {
