@@ -64,13 +64,13 @@ export default function TransitionProvider({ children }: { children: React.React
                 className="absolute"
                 style={{
                   background: c,
-                  top: `${-14 + i * 34}vh`,
-                  left: "-22vw",
-                  width: "96vw",
-                  height: "40vh",
+                  top: `${-25 + i * 30}vh`,
+                  left: "-30vw",
+                  width: "140vw",
+                  height: "70vh",
                   transform: "rotate(-14deg)",
                   transformOrigin: "left center",
-                  clipPath: "polygon(0 0, 100% 0, calc(100% - 160px) 100%, 0 100%)",
+                  clipPath: "polygon(0 0, 100% 0, calc(100% - 220px) 100%, 0 100%)",
                 }}
                 initial={{ x: "-130%" }}
                 animate={{ x: phase === "covering" ? "0%" : "130%" }}

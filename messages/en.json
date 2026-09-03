@@ -10,12 +10,15 @@
     "resume": "Resume"
   },
   "hero": {
-    "eyebrow": "Full Stack Developer",
+    "name": "Cristian Puentes",
+    "role": "Backend Engineer & Full Stack Developer",
+    "location": "Cartagena de Indias, Colombia",
     "headlineLine1": "I build products,",
     "headlineLine2": "not just features.",
-    "sub": "Django, Next.js and Postgres by day — lately, everything from self-hosted infrastructure to healthcare booking systems. I like owning the whole stack, servers included.",
+    "bio": "Systems & Computer Engineer building SaaS platforms and web apps with real business logic — payments, subscriptions, messaging pipelines. Full stack at Geeks5g with React, Next.js and AWS; backend is home turf: Django, Node.js, SQL.",
     "cta": "View Projects",
-    "ctaSecondary": "Get in touch"
+    "resume": "Download Resume",
+    "availableFor": "Open to backend & full stack roles"
   },
   "home": {
     "sectionLabel": "Personal Builds",
@@ -69,9 +72,9 @@
     "footerNote": "Descriptions are always mine to share — images and links go up as approvals come in.",
     "readPaper": "Read the paper",
     "thesis": {
-      "name": "Undergraduate Thesis",
-      "role": "Published research project",
-      "description": "Full write-up, screenshots and a link to the published article — nothing held back on this one."
+      "name": "AI-JobMatch",
+      "role": "Bachelor's Thesis — Feb–Nov 2023",
+      "description": "A candidate-to-job matching system using cosine similarity and Euclidean distance metrics, with OpenAI APIs for transcription and candidate analysis. Full write-up and a link to the paper — nothing held back on this one."
     },
     "verifylead": {
       "name": "Verify Lead",

@@ -10,12 +10,15 @@
     "resume": "CV"
   },
   "hero": {
-    "eyebrow": "Full Stack Developer",
+    "name": "Cristian Puentes",
+    "role": "Backend Engineer & Full Stack Developer",
+    "location": "Cartagena de Indias, Colombia",
     "headlineLine1": "Construyo productos,",
     "headlineLine2": "no solo funcionalidades.",
-    "sub": "Django, Next.js y Postgres de día a día — últimamente, de todo, desde infraestructura self-hosted hasta sistemas de reservas para salud. Me gusta ser dueño de todo el stack, servidores incluidos.",
+    "bio": "Ingeniero de Sistemas construyendo plataformas SaaS y aplicaciones web con lógica de negocio real — pagos, suscripciones, pipelines de mensajería. Full stack en Geeks5g con React, Next.js y AWS; el backend es mi terreno: Django, Node.js, SQL.",
     "cta": "Ver Proyectos",
-    "ctaSecondary": "Escríbeme"
+    "resume": "Descargar CV",
+    "availableFor": "Disponible para roles de backend y full stack"
   },
   "home": {
     "sectionLabel": "Proyectos Personales",
@@ -69,9 +72,9 @@
     "footerNote": "Las descripciones siempre son mías para compartir — imágenes y links se suben a medida que llegan las aprobaciones.",
     "readPaper": "Leer el artículo",
     "thesis": {
-      "name": "Proyecto de Grado",
-      "role": "Investigación publicada",
-      "description": "Descripción completa, capturas y un link al artículo publicado — nada se queda por fuera en este."
+      "name": "AI-JobMatch",
+      "role": "Proyecto de Grado — Feb–Nov 2023",
+      "description": "Un sistema de match entre candidatos y vacantes usando similitud de coseno y distancia euclidiana, con APIs de OpenAI para transcripción y análisis de candidatos. Descripción completa y link al artículo — nada se queda por fuera en este."
     },
     "verifylead": {
       "name": "Verify Lead",

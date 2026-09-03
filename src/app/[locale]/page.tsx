@@ -1,11 +1,29 @@
+import { getTranslations } from "next-intl/server";
 import SiteHeader from "@/components/SiteHeader";
 import HudBar from "@/components/HudBar";
+import Hero from "@/components/Hero";
 import CoverFlow from "@/components/CoverFlow";
 import ProfessionalSection from "@/components/ProfessionalSection";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const t = await getTranslations("home");
+
   return (
     <main className="relative flex min-h-screen flex-col bg-background">
+      <div className="relative overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-40"
+          style={{
+            backgroundImage:
+              "linear-gradient(#ffffff08 1px, transparent 1px), linear-gradient(90deg, #ffffff08 1px, transparent 1px)",
+            backgroundSize: "64px 64px",
+          }}
+        />
+        <SiteHeader />
+        <Hero />
+      </div>
+
       <div className="relative flex min-h-screen flex-col overflow-hidden">
         <div
           aria-hidden
@@ -22,7 +40,11 @@ export default function HomePage() {
           style={{ background: "linear-gradient(0deg, #0a1428 0%, transparent 100%)" }}
         />
 
-        <SiteHeader />
+        <div className="relative z-10 pt-16 text-center">
+          <div className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
+            {t("sectionLabel")}
+          </div>
+        </div>
 
         <div id="projects" className="relative z-10 flex flex-1 items-center justify-center px-4 py-10">
           <CoverFlow />
