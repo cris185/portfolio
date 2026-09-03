@@ -73,6 +73,13 @@ export const projects: Project[] = [
     glow: "var(--sevenlever-gold)",
     href: "https://seven-lever.cristianpuentes.com",
     repo: "https://github.com/cris185/seven-lever",
+    coverImage: "https://minio-api.cristianpuentes.com/portfolio-media/covers/sevenlever-card.jpg",
+    screenshots: [
+      { label: "Gameplay", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/sevenlever-gameplay.jpg" },
+      { label: "Seal hit", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/sevenlever-seal.jpg" },
+      { label: "Defeat", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/sevenlever-defeat.jpg" },
+      { label: "History", src: "https://minio-api.cristianpuentes.com/portfolio-media/covers/sevenlever-history.jpg" },
+    ],
     mode: "dark",
     heroBg: "#0f0d1a",
     bodyBg: "#16213e",
