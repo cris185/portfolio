@@ -635,9 +635,16 @@
     },
     "verifylead": {
       "name": "Verify Lead",
+      "category": "Client Project — Lead Verification & Outbound Email SaaS",
       "tagline": "Lead verification & outbound email for a 40+ person sales team",
       "role": "Role — Backend Developer",
-      "description": "A subscription-based lead-verification and outbound email platform used by a 40+ person sales team — deliverability checks before a lead enters a campaign, credit-based usage limits and access control, and scheduled sends with delivery metrics. RESTful APIs across a decoupled frontend/backend architecture. Screenshots and a live link are on the way, pending sign-off."
+      "description": "A subscription-based lead-verification and outbound email platform used by a 40+ person sales team — deliverability checks before a lead enters a campaign, credit-based usage limits and access control, and scheduled sends with delivery metrics. RESTful APIs across a decoupled frontend/backend architecture.",
+      "features": [
+        "Deliverability checks that screen leads before they enter a campaign",
+        "Credit-based usage limits and access control across accounts",
+        "Scheduled email sends with delivery and engagement metrics",
+        "RESTful APIs across a decoupled frontend/backend architecture"
+      ]
     },
     "dashboardanalytics": {
       "name": "Dashboard Analytics",

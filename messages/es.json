@@ -635,9 +635,16 @@
     },
     "verifylead": {
       "name": "Verify Lead",
+      "category": "Proyecto para Cliente — SaaS de Verificación de Leads y Correo Saliente",
       "tagline": "Verificación de leads y correo saliente para un equipo de 40+ personas",
       "role": "Rol — Backend Developer",
-      "description": "Una plataforma de verificación de leads y correo saliente, basada en suscripción, usada por un equipo de ventas de más de 40 personas — validación de entregabilidad antes de que un lead entre a una campaña, límites de uso por créditos y control de acceso, y envíos programados con métricas de entrega. APIs REST sobre una arquitectura frontend/backend desacoplada. Capturas y un link en vivo vienen en camino, pendiente de aprobación."
+      "description": "Una plataforma de verificación de leads y correo saliente, basada en suscripción, usada por un equipo de ventas de más de 40 personas — validación de entregabilidad antes de que un lead entre a una campaña, límites de uso por créditos y control de acceso, y envíos programados con métricas de entrega. APIs REST sobre una arquitectura frontend/backend desacoplada.",
+      "features": [
+        "Validación de entregabilidad que filtra leads antes de entrar a una campaña",
+        "Límites de uso por créditos y control de acceso entre cuentas",
+        "Envíos de correo programados con métricas de entrega y engagement",
+        "APIs REST sobre una arquitectura frontend/backend desacoplada"
+      ]
     },
     "dashboardanalytics": {
       "name": "Dashboard Analytics",
