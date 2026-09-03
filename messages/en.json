@@ -33,33 +33,66 @@
       "name": "CHOHEALTH",
       "tagline": "Healthcare booking, self-hosted end to end",
       "category": "Personal Project — Healthcare",
-      "description": "A booking platform that lets clinics manage appointments, medical records and payments — built and deployed end to end, from the Django API down to the server it runs on.",
+      "description": "An end-to-end telemedicine platform: appointment scheduling, online payments, medical consultations, prescriptions, lab orders, invoicing and pharmacy delivery — built and deployed entirely on my own infrastructure.",
       "problemTitle": "The Problem",
-      "problem": "Small clinics were juggling paper schedules and three disconnected tools for booking, billing and records — nothing talked to each other, and double-bookings were routine."
+      "problem": "Small clinics were juggling paper schedules and disconnected tools for booking, billing and records — nothing talked to each other, and double-bookings were routine.",
+      "stats": "25+ database models · 70+ REST endpoints · 40+ frontend routes",
+      "features": [
+        "A scheduling engine that validates working hours, breaks, service duration and appointment conflicts before a slot is confirmed",
+        "Three-layer booking protection: frontend validation, DRF serializer validation, and database constraints",
+        "Stripe and PayPal payments with idempotent webhook handling and audited refund workflows",
+        "Atomic consultation flow — diagnosis, prescriptions and lab orders are created together or not at all",
+        "Invoices, prescriptions and lab orders generated as real PDF documents with ReportLab",
+        "QR pickup codes, SendGrid transactional email, and full English/Spanish support"
+      ]
     },
     "choplanner": {
       "name": "CHO Planner",
       "tagline": "AI-assisted task manager, local-first",
       "category": "Personal Project — Productivity",
-      "description": "A personal task and note manager with a swappable AI assistant — Claude, GPT or Gemini — that breaks goals into weighted subtasks and optionally syncs with Google Calendar. Local-first: it works fully without any external service."
+      "description": "A personal task and note manager in the spirit of Linear or ClickUp, deliberately simpler — with a swappable AI assistant that breaks goals into weighted subtasks and an optional Google Calendar sync.",
+      "problemTitle": "The Problem",
+      "problem": "Most task managers either lock you into their cloud or hand your data — and your AI provider's API key — to a third party. I wanted something I fully own: self-hosted, with AI as an optional layer, not a dependency.",
+      "features": [
+        "Swappable AI assistant — bring your own Claude, GPT or Gemini key; every provider's output is validated against the same Zod schema before it touches the database",
+        "Kanban board with drag-and-drop, weighted task priorities, sprints and Markdown notes",
+        "Optional Google Calendar sync via OAuth 2.0, always with explicit confirmation before writing an event",
+        "API keys and refresh tokens encrypted at rest with AES-256-GCM — never sent back to the frontend",
+        "Installable PWA with an offline page and a service worker that never caches API routes"
+      ]
     },
     "neurostock": {
       "name": "Neurostock",
       "tagline": "Stock price prediction with LSTM neural networks",
       "category": "Personal Project — Machine Learning",
-      "description": "Predicts stock prices for any ticker using an LSTM neural network trained on historical data, with Monte Carlo Dropout for uncertainty estimation and strict data-leakage prevention between training and test sets."
+      "description": "Predicts stock prices for any ticker using an LSTM neural network trained on historical data from Yahoo Finance, with backtesting and confidence intervals — not just a single-number guess.",
+      "features": [
+        "2-layer LSTM (128 + 64 units) trained on up to 10 years of historical price data per ticker",
+        "Monte Carlo Dropout (50 iterations) to turn a single prediction into a real confidence interval",
+        "Strict separation between train and test scalers to prevent data leakage — a mistake most tutorials skip",
+        "Backtesting dashboard with MSE, RMSE and R² computed against real historical prices",
+        "JWT auth with automatic token refresh, and a singleton-cached model for fast concurrent predictions"
+      ]
     },
     "sevenlever": {
       "name": "Seven Lever",
       "tagline": "The Colombian schoolyard dice game",
       "category": "Personal Project — Game",
-      "description": "A local two-player dice game based on \"Seven Eleven\", the game played in Colombian schoolyards — bets, a life bar, and an animated loss sequence, all live in the frontend."
+      "description": "A local two-player dice game based on \"Seven Eleven\", the game played in Colombian schoolyards — bets, a life bar, and an animated loss sequence, all live in the frontend.",
+      "features": [
+        "The full ruleset: target-number logic, instant loss on 7 or 11, a configurable life bar (3–10 hits)",
+        "Game logic runs 100% in the frontend for zero-latency turns — the backend only persists finished rounds",
+        "Framer Motion animations for the dice roll, the \"seal\" hit, and the crying loss sequence",
+        "Local two-player state in Zustand; match history and stats persisted through Prisma",
+        "Sound effects via Howler.js, lazy-loaded so they never block first paint"
+      ]
     }
   },
   "projectPage": {
     "back": "Eject cartridge",
     "visitLive": "Visit live site",
     "techStack": "Tech stack",
+    "featuresTitle": "What it does",
     "demoAccount": "Demo account",
     "demoNote": "Public demo — feel free to log in and click around."
   },

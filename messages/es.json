@@ -33,33 +33,66 @@
       "name": "CHOHEALTH",
       "tagline": "Reservas de citas médicas, self-hosted de punta a punta",
       "category": "Proyecto Personal — Salud",
-      "description": "Una plataforma de reservas que permite a clínicas gestionar citas, historiales médicos y pagos — construida y desplegada de punta a punta, desde la API en Django hasta el servidor donde corre.",
+      "description": "Una plataforma de telemedicina de punta a punta: reservas de citas, pagos en línea, consultas médicas, prescripciones, órdenes de laboratorio, facturación y entrega de farmacia — construida y desplegada completamente en mi propia infraestructura.",
       "problemTitle": "El Problema",
-      "problem": "Las clínicas pequeñas manejaban agendas en papel y tres herramientas desconectadas para reservas, facturación e historiales — nada se comunicaba entre sí, y las citas duplicadas eran algo común."
+      "problem": "Las clínicas pequeñas manejaban agendas en papel y herramientas desconectadas para reservas, facturación e historiales — nada se comunicaba entre sí, y las citas duplicadas eran algo común.",
+      "stats": "25+ modelos de base de datos · 70+ endpoints REST · 40+ rutas de frontend",
+      "features": [
+        "Motor de agenda que valida horarios laborales, descansos, duración del servicio y conflictos antes de confirmar un cupo",
+        "Protección de reservas en tres capas: validación en frontend, validación de serializers en DRF, y constraints en base de datos",
+        "Pagos con Stripe y PayPal con manejo idempotente de webhooks y flujos de reembolso auditados",
+        "Flujo de consulta atómico — diagnóstico, prescripciones y órdenes de laboratorio se crean juntos o no se crean",
+        "Facturas, prescripciones y órdenes de laboratorio generadas como PDFs reales con ReportLab",
+        "Códigos QR de recogida, correos transaccionales con SendGrid, y soporte completo en inglés/español"
+      ]
     },
     "choplanner": {
       "name": "CHO Planner",
       "tagline": "Gestor de tareas con IA, local-first",
       "category": "Proyecto Personal — Productividad",
-      "description": "Un gestor de tareas y notas personal con un asistente de IA intercambiable — Claude, GPT o Gemini — que descompone objetivos en subtareas con pesos y opcionalmente sincroniza con Google Calendar. Local-first: funciona completamente sin ningún servicio externo."
+      "description": "Un gestor de tareas y notas personal al estilo de Linear o ClickUp, deliberadamente más simple — con un asistente de IA intercambiable que descompone objetivos en subtareas con pesos, y sincronización opcional con Google Calendar.",
+      "problemTitle": "El Problema",
+      "problem": "La mayoría de gestores de tareas o te encierran en su nube, o entregan tus datos — y la API key de tu proveedor de IA — a un tercero. Quería algo que fuera completamente mío: self-hosted, con la IA como capa opcional, no como dependencia.",
+      "features": [
+        "Asistente de IA intercambiable — trae tu propia key de Claude, GPT o Gemini; la salida de cada proveedor se valida contra el mismo esquema Zod antes de tocar la base de datos",
+        "Board Kanban con drag-and-drop, prioridades por peso, sprints y notas en Markdown",
+        "Sincronización opcional con Google Calendar vía OAuth 2.0, siempre con confirmación explícita antes de escribir un evento",
+        "API keys y refresh tokens cifrados en reposo con AES-256-GCM — nunca se envían de vuelta al frontend",
+        "PWA instalable con página offline y un service worker que nunca cachea las rutas de la API"
+      ]
     },
     "neurostock": {
       "name": "Neurostock",
       "tagline": "Predicción de acciones con redes neuronales LSTM",
       "category": "Proyecto Personal — Machine Learning",
-      "description": "Predice el precio de cualquier acción usando una red neuronal LSTM entrenada con datos históricos, con Monte Carlo Dropout para estimar incertidumbre y prevención estricta de data leakage entre entrenamiento y prueba."
+      "description": "Predice el precio de cualquier acción usando una red neuronal LSTM entrenada con datos históricos de Yahoo Finance, con backtesting e intervalos de confianza — no solo un número suelto.",
+      "features": [
+        "LSTM de 2 capas (128 + 64 unidades) entrenada con hasta 10 años de datos históricos de precio por ticker",
+        "Monte Carlo Dropout (50 iteraciones) para convertir una predicción puntual en un intervalo de confianza real",
+        "Separación estricta entre los scalers de entrenamiento y prueba para prevenir data leakage — un error que la mayoría de tutoriales se salta",
+        "Dashboard de backtesting con MSE, RMSE y R² calculados contra precios históricos reales",
+        "Autenticación JWT con refresh automático, y un modelo cacheado como singleton para predicciones concurrentes rápidas"
+      ]
     },
     "sevenlever": {
       "name": "Seven Lever",
       "tagline": "El juego de dados de colegio colombiano",
       "category": "Proyecto Personal — Juego",
-      "description": "Un juego de dados local para dos jugadores basado en el \"Seven Eleven\" que se juega en los colegios colombianos — apuestas, barra de vida, y una animación de derrota, todo vivo en el frontend."
+      "description": "Un juego de dados local para dos jugadores basado en el \"Seven Eleven\" que se juega en los colegios colombianos — apuestas, barra de vida, y una animación de derrota, todo vivo en el frontend.",
+      "features": [
+        "El reglamento completo: lógica de número objetivo, pérdida instantánea con 7 u 11, barra de vida configurable (3–10 golpes)",
+        "La lógica del juego corre 100% en el frontend para turnos sin latencia — el backend solo persiste rondas terminadas",
+        "Animaciones con Framer Motion para el lanzamiento de dados, el golpe del \"sello\", y la animación de derrota",
+        "Estado local de dos jugadores en Zustand; historial y estadísticas persistidas con Prisma",
+        "Efectos de sonido con Howler.js, cargados de forma diferida para no bloquear el primer render"
+      ]
     }
   },
   "projectPage": {
     "back": "Expulsar cartucho",
     "visitLive": "Ver sitio en vivo",
     "techStack": "Stack tecnológico",
+    "featuresTitle": "Qué hace",
     "demoAccount": "Cuenta demo",
     "demoNote": "Demo pública — siéntete libre de entrar y explorar."
   },

@@ -28,8 +28,22 @@ export default function CoverFlow() {
   const reduceMotion = useReducedMotion() ?? false;
   const [active, setActive] = useState(1); // CHOHEALTH featured by default
 
+  // Restore whichever project the visitor last had active (e.g. after visiting a
+  // detail page and coming back) instead of always resetting to CHOHEALTH.
+  useEffect(() => {
+    const stored = sessionStorage.getItem("cf-active-project");
+    if (!stored) return;
+    const idx = projects.findIndex((p) => p.id === stored);
+    if (idx >= 0) setActive(idx);
+  }, []);
+
   const select = useCallback((index: number) => {
-    setActive(() => Math.max(0, Math.min(projects.length, index)));
+    setActive(() => {
+      const clamped = Math.max(0, Math.min(projects.length, index));
+      const project = projects[clamped];
+      if (project) sessionStorage.setItem("cf-active-project", project.id);
+      return clamped;
+    });
   }, []);
 
   const openActive = useCallback(() => {
@@ -40,6 +54,11 @@ export default function CoverFlow() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typing =
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (typing) return;
       if (e.key === "ArrowLeft") select(active - 1);
       if (e.key === "ArrowRight") select(active + 1);
       if (e.key === "Enter") openActive();

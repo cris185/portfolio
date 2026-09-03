@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Check } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { getProject, projects, type ProjectId } from "@/lib/projects";
 import BackLink from "@/components/BackLink";
@@ -59,11 +59,15 @@ export default async function ProjectDetailPage({
         </div>
       </div>
 
-      {/* diagonal seam */}
-      <div style={{ background: project.heroBg, clipPath: "polygon(0 0, 100% 0, 100% 0, 0 100%)" }} className="-mt-px h-14" />
+      {/* seam: smooth gradient from hero into the body, no more broken clip-path */}
+      <div
+        aria-hidden
+        className="h-16"
+        style={{ background: `linear-gradient(180deg, ${project.heroBg} 0%, ${project.bodyBg} 100%)` }}
+      />
 
       {/* body */}
-      <div className="relative -mt-5 px-6 pb-16 sm:px-12">
+      <div className="relative px-6 pb-16 sm:px-12">
         <div className="max-w-2xl">
           <div
             className="mb-4 font-mono text-xs uppercase tracking-[0.1em]"
@@ -72,11 +76,20 @@ export default async function ProjectDetailPage({
             {tp("category")}
           </div>
           <p
-            className="mb-7 text-lg leading-relaxed"
-            style={{ color: project.textSecondary }}
+            className="mb-4 text-lg leading-relaxed"
+            style={{ color: project.textPrimary }}
           >
             {tp("description")}
           </p>
+
+          {project.hasStats && (
+            <div
+              className="mb-7 font-mono text-xs"
+              style={{ color: project.accentText }}
+            >
+              {tp("stats")}
+            </div>
+          )}
 
           <div className="mb-11 flex flex-wrap gap-2">
             {project.techStack.map((tech) => (
@@ -148,11 +161,28 @@ export default async function ProjectDetailPage({
             >
               {tp("problemTitle")}
             </div>
-            <p className="text-[15px] leading-relaxed" style={{ color: project.textSecondary }}>
+            <p className="text-[15px] leading-relaxed" style={{ color: project.textPrimary }}>
               {tp("problem")}
             </p>
           </div>
         )}
+
+        <div className="mt-14 max-w-xl">
+          <div
+            className="mb-4 inline-block -skew-x-[4deg] font-display text-2xl font-bold"
+            style={{ color: project.textPrimary }}
+          >
+            {t("featuresTitle")}
+          </div>
+          <ul className="flex flex-col gap-3">
+            {(tp.raw("features") as string[]).map((feature) => (
+              <li key={feature} className="flex items-start gap-2.5 text-[14.5px] leading-relaxed" style={{ color: project.textPrimary }}>
+                <Check size={15} className="mt-0.5 shrink-0" style={{ color: project.accentText }} />
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
 
         {project.demoAccounts && (
           <div className="mt-14 max-w-xl">

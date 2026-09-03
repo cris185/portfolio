@@ -19,6 +19,7 @@ export interface Project {
   pillBorder: string;
   techStack: string[];
   hasProblem: boolean;
+  hasStats?: boolean;
   demoAccounts?: { label: string; email: string; password: string }[];
 }
 
@@ -56,6 +57,7 @@ export const projects: Project[] = [
     pillBorder: "#1d4ed82a",
     techStack: ["Django", "Next.js", "PostgreSQL", "Stripe", "Docker"],
     hasProblem: true,
+    hasStats: true,
     demoAccounts: [
       { label: "Doctor", email: "elena.rodriguez@chohealth.test", password: "Demo1234!" },
       { label: "Patient", email: "patient@example.com", password: "Demo1234!" },
@@ -76,7 +78,7 @@ export const projects: Project[] = [
     pillBg: "#534ab70f",
     pillBorder: "#534ab72a",
     techStack: ["Next.js 16", "React 19", "Prisma", "NextAuth", "Vercel AI SDK", "Google Calendar API"],
-    hasProblem: false,
+    hasProblem: true,
     demoAccounts: [{ label: "Demo", email: "demo@choplanner.local", password: "demo1234" }],
   },
   {
