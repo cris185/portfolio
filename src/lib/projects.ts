@@ -23,7 +23,11 @@ export interface Project {
   techStack: string[];
   hasProblem: boolean;
   hasStats?: boolean;
-  demoAccounts?: { label: string; email: string; password: string }[];
+  demoAccounts?: {
+    accounts?: { label: string; email: string; password: string }[];
+    /** Optional larger grid of role-specific demo accounts (e.g. every seeded doctor), shown below `accounts` */
+    doctors?: { specKey: string; name: string; email: string; password: string }[];
+  };
   /** Full documentation, transcribed verbatim from the project's own GitHub README */
   docs?: {
     fullStack: { layer: string; tech: string }[];
@@ -82,10 +86,21 @@ export const projects: Project[] = [
     techStack: ["Django", "Next.js", "PostgreSQL", "Stripe", "Docker"],
     hasProblem: true,
     hasStats: true,
-    demoAccounts: [
-      { label: "Doctor", email: "elena.rodriguez@chohealth.test", password: "Demo1234!" },
-      { label: "Patient", email: "patient@example.com", password: "Demo1234!" },
-    ],
+    demoAccounts: {
+      accounts: [{ label: "Patient", email: "patient@example.com", password: "Demo1234!" }],
+      doctors: [
+        { specKey: "generalMedicine", name: "Dr. Elena Rodriguez", email: "elena.rodriguez@chohealth.test", password: "Test1234!" },
+        { specKey: "cardiology", name: "Dr. Marcus Chen", email: "marcus.chen@chohealth.test", password: "Test1234!" },
+        { specKey: "pediatrics", name: "Dr. Sarah Okonkwo", email: "sarah.okonkwo@chohealth.test", password: "Test1234!" },
+        { specKey: "dermatology", name: "Dr. David Mueller", email: "david.mueller@chohealth.test", password: "Test1234!" },
+        { specKey: "gynecology", name: "Dr. Aisha Patel", email: "aisha.patel@chohealth.test", password: "Test1234!" },
+        { specKey: "orthopedics", name: "Dr. Roberto Silva", email: "roberto.silva@chohealth.test", password: "Test1234!" },
+        { specKey: "neurology", name: "Dr. Hannah Schmidt", email: "hannah.schmidt@chohealth.test", password: "Test1234!" },
+        { specKey: "psychiatry", name: "Dr. James Okafor", email: "james.okafor@chohealth.test", password: "Test1234!" },
+        { specKey: "laboratory", name: "Alex Vargas", email: "lab.staff.alpha@chohealth.test", password: "Test1234!" },
+        { specKey: "laboratory", name: "Beatriz Lima", email: "lab.staff.beta@chohealth.test", password: "Test1234!" },
+      ],
+    },
     docs: {
       fullStack: [
         { layer: "Backend", tech: "Django 6, Django REST Framework, djangorestframework-simplejwt" },
@@ -373,7 +388,7 @@ NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
     pillBorder: "#534ab72a",
     techStack: ["Next.js 16", "React 19", "Prisma", "NextAuth", "Vercel AI SDK", "Google Calendar API"],
     hasProblem: true,
-    demoAccounts: [{ label: "Demo", email: "demo@choplanner.local", password: "demo1234" }],
+    demoAccounts: { accounts: [{ label: "Demo", email: "demo@choplanner.local", password: "demo1234" }] },
   },
   {
     id: "neurostock",

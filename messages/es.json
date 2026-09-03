@@ -190,6 +190,17 @@
           "backendNote": "La API queda disponible en http://127.0.0.1:8000/api/, el admin en http://127.0.0.1:8000/admin/.",
           "closingNote": "El frontend queda disponible en http://localhost:3000. Corre backend y frontend en dos terminales — el frontend depende de la API para todo (autenticación, citas, pagos, etc.)."
         }
+      },
+      "demoSpecializations": {
+        "generalMedicine": "Medicina General",
+        "cardiology": "Cardiología",
+        "pediatrics": "Pediatría",
+        "dermatology": "Dermatología",
+        "gynecology": "Ginecología",
+        "orthopedics": "Ortopedia",
+        "neurology": "Neurología",
+        "psychiatry": "Psiquiatría",
+        "laboratory": "Laboratorio"
       }
     },
     "choplanner": {
@@ -240,8 +251,10 @@
     "viewRepo": "Ver en GitHub",
     "techStack": "Stack tecnológico",
     "featuresTitle": "Qué hace",
-    "demoAccount": "Cuenta demo",
+    "demoAccount": "Cuentas demo",
     "demoNote": "Demo pública — siéntete libre de entrar y explorar.",
+    "demoPatient": "Paciente",
+    "demoDoctors": "Doctores",
     "docsToggleOn": "Documentación completa",
     "docsToggleOff": "Leer la documentación completa",
     "docsSub": "Transcrito directamente del README del proyecto — arquitectura, modelo de datos, reglas de negocio y cómo correrlo.",

@@ -223,33 +223,70 @@ export default async function ProjectDetailPage({
         )}
 
         {project.demoAccounts && (
-          <div className="mt-14 max-w-xl">
+          <div className="mt-14 max-w-3xl">
             <div
               className="mb-4 font-mono text-xs uppercase tracking-[0.1em]"
               style={{ color: project.accentText }}
             >
               {t("demoAccount")}
             </div>
-            <div className="flex flex-wrap gap-3">
-              {project.demoAccounts.map((acc) => (
-                <div
-                  key={acc.email}
-                  className="rounded-lg px-4 py-3 font-mono text-xs"
-                  style={{
-                    background: project.pillBg,
-                    border: `1px solid ${project.pillBorder}`,
-                    color: project.textPrimary,
-                  }}
-                >
-                  <div className="mb-1 font-medium" style={{ color: project.accentText }}>
-                    {acc.label}
+
+            {project.demoAccounts.accounts && project.demoAccounts.accounts.length > 0 && (
+              <div className="mb-6 flex flex-wrap gap-3">
+                {project.demoAccounts.accounts.map((acc) => (
+                  <div
+                    key={acc.email}
+                    className="rounded-lg px-4 py-3 font-mono text-xs"
+                    style={{
+                      background: project.pillBg,
+                      border: `1px solid ${project.pillBorder}`,
+                      color: project.textPrimary,
+                    }}
+                  >
+                    <div className="mb-1 font-medium" style={{ color: project.accentText }}>
+                      {acc.label}
+                    </div>
+                    <div>{acc.email}</div>
+                    <div style={{ color: project.textSecondary }}>{acc.password}</div>
                   </div>
-                  <div>{acc.email}</div>
-                  <div style={{ color: project.textSecondary }}>{acc.password}</div>
+                ))}
+              </div>
+            )}
+
+            {project.demoAccounts.doctors && project.demoAccounts.doctors.length > 0 && (
+              <div>
+                <div className="mb-2.5 text-[12px] font-semibold" style={{ color: project.textPrimary }}>
+                  {t("demoDoctors")}
                 </div>
-              ))}
-            </div>
-            <p className="mt-3 text-xs" style={{ color: project.textSecondary }}>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {project.demoAccounts.doctors.map((doc) => (
+                    <div
+                      key={doc.email}
+                      className="rounded-lg px-4 py-3 font-mono text-[11px]"
+                      style={{
+                        background: project.pillBg,
+                        border: `1px solid ${project.pillBorder}`,
+                        color: project.textPrimary,
+                      }}
+                    >
+                      <div className="mb-1.5 flex items-center justify-between gap-2 font-sans">
+                        <span className="text-[12px] font-medium">{doc.name}</span>
+                        <span
+                          className="shrink-0 rounded px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.04em]"
+                          style={{ background: `${project.accentText}1a`, color: project.accentText }}
+                        >
+                          {tp(`demoSpecializations.${doc.specKey}`)}
+                        </span>
+                      </div>
+                      <div className="break-all">{doc.email}</div>
+                      <div style={{ color: project.textSecondary }}>{doc.password}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <p className="mt-4 text-xs" style={{ color: project.textSecondary }}>
               {t("demoNote")}
             </p>
           </div>
