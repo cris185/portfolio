@@ -385,7 +385,60 @@
         "Framer Motion animations for the dice roll, the \"seal\" hit, and the crying loss sequence",
         "Local two-player state in Zustand; match history and stats persisted through Prisma",
         "Sound effects via Howler.js, lazy-loaded so they never block first paint"
-      ]
+      ],
+      "docs": {
+        "problemLong": "Seven Lever is a dice game for two players on the same device, based on the classic \"Seven Eleven\" played in Colombian schoolyards. At the start of each round the stakes are set — cards (an exchange) or seals (a hit with the index and middle finger on the forearm). The active player rolls the dice, and the total from the first valid roll becomes their target number; rolling a 7 or 11 on that very first roll is an instant loss. From there they keep rolling until they either repeat the target number (round won) or hit a 7 or 11 (round lost). In seal mode, the loser's health bar drops, and hitting zero triggers a loss animation — a crying character with a marked-up forearm. The number of seals is configurable between 3 and 10. Since it's a same-device, non-competitive game, the engineering goal was different from a typical CRUD app: keep every turn at zero latency by running the entire game locally, and only talk to the backend to persist what already happened.",
+        "decisions": [
+          { "title": "No WebSockets — the whole game runs on one device", "rationale": "Both players share the same screen and the same session; there's nothing to synchronize in real time between two clients, so a persistent connection would be solving a problem this game doesn't have." },
+          { "title": "Game logic is 100% frontend and side-effect-free (gameLogic.ts)", "rationale": "Dice rolls and round outcomes are evaluated locally for zero-latency turns. Keeping that logic as pure functions, separate from the UI and from any network call, makes it trivial to reason about and test." },
+          { "title": "The backend only persists finished rounds and games — it never re-validates a roll", "rationale": "This is a local, non-competitive game, not an online multiplayer one — there's no cheating to defend against between two people sharing a table. The backend's job is history and stats, not refereeing." },
+          { "title": "In-progress game state lives in Zustand, in memory — nothing is written until a round or game actually finishes", "rationale": "A round that's still being played has no reason to touch the network or the database; persisting only completed outcomes keeps the hot path (rolling dice, seeing the result) instant." },
+          { "title": "Player is explicitly not an auth concept", "rationale": "A Player row is just the display name typed in at game setup — there's no login, no session, no credential to manage, because the game has no notion of an account in the first place." },
+          { "title": "Sound effects are lazy-loaded with Howler.js", "rationale": "Dice-rolling, hit and crying sounds only matter once a game actually starts, so loading them eagerly would just slow down the very first paint for no benefit." }
+        ],
+        "architectureNote": "No WebSockets, no real-time sync — it's a local, same-device game. All game logic lives in the frontend; the backend's only job is to persist the outcome once a round or game actually finishes.",
+        "schemaIntro": "Four models cover the whole game: Player is just a display name (not an auth account), Game is a full match between two players, Round is one target-number cycle within a game, and Roll is a single pair of dice within a round.",
+        "schemaDiagramTitles": {
+          "main": "Data model"
+        },
+        "apiReference": [
+          {
+            "group": "Games",
+            "rows": [
+              { "method": "POST", "path": "/api/games", "description": "Create a new game (player names, mode, seal count)" },
+              { "method": "GET", "path": "/api/games", "description": "List games (history)" },
+              { "method": "GET", "path": "/api/games/:id", "description": "Get one game's detail" },
+              { "method": "PATCH", "path": "/api/games/:id/finish", "description": "Mark a game finished and record the winner" }
+            ]
+          },
+          {
+            "group": "Rounds & rolls",
+            "rows": [
+              { "method": "POST", "path": "/api/games/:id/rounds", "description": "Record a round's outcome" },
+              { "method": "GET", "path": "/api/games/:id/rounds", "description": "List a game's rounds" },
+              { "method": "POST", "path": "/api/rounds/:id/rolls", "description": "Save a round's dice rolls" }
+            ]
+          },
+          {
+            "group": "Stats",
+            "rows": [
+              { "method": "GET", "path": "/api/stats", "description": "Global stats (most wins, and so on)" }
+            ]
+          }
+        ],
+        "limitations": [
+          "Same-device only, not online multiplayer. There's no WebSocket layer, no matchmaking, no notion of two clients in different places playing the same match — both players share one screen.",
+          "The backend trusts the frontend's dice rolls instead of re-validating them. That's a reasonable trade-off for a local, non-competitive game between two people at the same table, but it means this design would need real server-side validation before it could support any online or competitive mode."
+        ],
+        "gettingStarted": {
+          "stepTitles": {
+            "db": "Start the database",
+            "backend": "Backend",
+            "frontend": "Frontend"
+          },
+          "closingNote": "Frontend at http://localhost:3000, API at http://localhost:4000/api. Type in both player names, pick a mode, and start rolling — there's no account to create."
+        }
+      }
     }
   },
   "projectPage": {

@@ -385,7 +385,60 @@
         "Animaciones con Framer Motion para el lanzamiento de dados, el golpe del \"sello\", y la animación de derrota",
         "Estado local de dos jugadores en Zustand; historial y estadísticas persistidas con Prisma",
         "Efectos de sonido con Howler.js, cargados de forma diferida para no bloquear el primer render"
-      ]
+      ],
+      "docs": {
+        "problemLong": "Seven Lever es un juego de dados para dos jugadores en el mismo dispositivo, basado en el clásico \"Seven Eleven\" que se juega en los colegios colombianos. Al inicio de cada ronda se define la apuesta — cartas (intercambio) o sellos (golpe con dedo índice y medio en el antebrazo). El jugador activo tira los dados, y el total de la primera tirada válida se convierte en su número objetivo; si en esa primera tirada cae 7 u 11, pierde de inmediato. A partir de ahí sigue tirando hasta que repite el número objetivo (gana la ronda) o cae un 7 u 11 (pierde la ronda). En modo sellos, la barra de vida del perdedor baja, y al llegar a 0 se dispara una animación de derrota — un personaje llorando con el antebrazo marcado. La cantidad de sellos es configurable entre 3 y 10. Al ser un juego local y no competitivo, el objetivo de ingeniería fue distinto al de una app CRUD típica: mantener cada turno a latencia cero corriendo todo el juego localmente, y hablarle al backend solo para persistir lo que ya ocurrió.",
+        "decisions": [
+          { "title": "Sin WebSockets — todo el juego corre en un solo dispositivo", "rationale": "Ambos jugadores comparten la misma pantalla y la misma sesión; no hay nada que sincronizar en tiempo real entre dos clientes, así que una conexión persistente estaría resolviendo un problema que este juego no tiene." },
+          { "title": "La lógica del juego es 100% frontend y sin efectos secundarios (gameLogic.ts)", "rationale": "Las tiradas y los resultados de ronda se evalúan localmente para turnos sin latencia. Mantener esa lógica como funciones puras, separada de la UI y de cualquier llamada de red, hace que sea trivial de razonar y de testear." },
+          { "title": "El backend solo persiste rondas y partidas terminadas — nunca revalida una tirada", "rationale": "Es un juego local y no competitivo, no uno multijugador online — no hay trampa que prevenir entre dos personas compartiendo una mesa. El trabajo del backend es historial y estadísticas, no arbitrar." },
+          { "title": "El estado de la partida en curso vive en Zustand, en memoria — nada se escribe hasta que una ronda o partida realmente termina", "rationale": "Una ronda que todavía se está jugando no tiene por qué tocar la red ni la base de datos; persistir solo los resultados completados mantiene la ruta caliente (tirar los dados, ver el resultado) instantánea." },
+          { "title": "Player explícitamente no es un concepto de auth", "rationale": "Un registro de Player es solo el nombre que se escribe al configurar la partida — no hay login, ni sesión, ni credencial que gestionar, porque el juego de entrada no tiene noción de cuenta." },
+          { "title": "Los efectos de sonido se cargan de forma diferida con Howler.js", "rationale": "Los sonidos de dados, golpe y llanto solo importan una vez que una partida realmente empieza, así que cargarlos de entrada solo retrasaría el primer render sin ningún beneficio." }
+        ],
+        "architectureNote": "Sin WebSockets, sin sincronización en tiempo real — es un juego local, en el mismo dispositivo. Toda la lógica del juego vive en el frontend; el único trabajo del backend es persistir el resultado una vez que una ronda o partida realmente termina.",
+        "schemaIntro": "Cuatro modelos cubren todo el juego: Player es solo un nombre para mostrar (no una cuenta de auth), Game es una partida completa entre dos jugadores, Round es un ciclo de número objetivo dentro de una partida, y Roll es un par de dados dentro de una ronda.",
+        "schemaDiagramTitles": {
+          "main": "Modelo de datos"
+        },
+        "apiReference": [
+          {
+            "group": "Partidas",
+            "rows": [
+              { "method": "POST", "path": "/api/games", "description": "Crear una partida nueva (nombres de jugadores, modo, cantidad de sellos)" },
+              { "method": "GET", "path": "/api/games", "description": "Listar partidas (historial)" },
+              { "method": "GET", "path": "/api/games/:id", "description": "Detalle de una partida" },
+              { "method": "PATCH", "path": "/api/games/:id/finish", "description": "Marcar una partida como terminada y registrar el ganador" }
+            ]
+          },
+          {
+            "group": "Rondas y tiradas",
+            "rows": [
+              { "method": "POST", "path": "/api/games/:id/rounds", "description": "Registrar el resultado de una ronda" },
+              { "method": "GET", "path": "/api/games/:id/rounds", "description": "Listar las rondas de una partida" },
+              { "method": "POST", "path": "/api/rounds/:id/rolls", "description": "Guardar las tiradas de una ronda" }
+            ]
+          },
+          {
+            "group": "Estadísticas",
+            "rows": [
+              { "method": "GET", "path": "/api/stats", "description": "Estadísticas globales (más victorias, etc.)" }
+            ]
+          }
+        ],
+        "limitations": [
+          "Solo funciona en el mismo dispositivo, no es multijugador online. No hay capa de WebSockets, ni matchmaking, ni noción de dos clientes en lugares distintos jugando la misma partida — ambos jugadores comparten una sola pantalla.",
+          "El backend confía en las tiradas que le manda el frontend en vez de revalidarlas. Es un trade-off razonable para un juego local y no competitivo entre dos personas en la misma mesa, pero significa que este diseño necesitaría validación real del lado del servidor antes de poder soportar cualquier modo online o competitivo."
+        ],
+        "gettingStarted": {
+          "stepTitles": {
+            "db": "Levantar la base de datos",
+            "backend": "Backend",
+            "frontend": "Frontend"
+          },
+          "closingNote": "Frontend en http://localhost:3000, API en http://localhost:4000/api. Escribe los nombres de ambos jugadores, elige un modo, y empieza a tirar — no hay ninguna cuenta que crear."
+        }
+      }
     }
   },
   "projectPage": {

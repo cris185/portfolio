@@ -83,6 +83,176 @@ export const projects: Project[] = [
     pillBorder: "#f4c4303a",
     techStack: ["Next.js", "TypeScript", "Prisma", "Express", "Framer Motion", "Zustand"],
     hasProblem: false,
+    docs: {
+      fullStack: [
+        { layer: "Next.js 14 (App Router)", tech: "SSR where useful, modern routing structure" },
+        { layer: "TypeScript", tech: "Typed game logic on both frontend and backend" },
+        { layer: "Tailwind CSS", tech: "Fast utilities, no heavy custom CSS" },
+        { layer: "shadcn/ui", tech: "Headless components on top of Tailwind" },
+        { layer: "Framer Motion", tech: "Dice roll, seal hit, health bar, crying-loss animations" },
+        { layer: "Howler.js", tech: "Dice rolling, hit, and crying sound effects" },
+        { layer: "Zustand", tech: "Lightweight in-memory state for the active game" },
+        { layer: "Axios", tech: "Calls to the backend" },
+        { layer: "Node.js 20 LTS + Express", tech: "REST API server" },
+        { layer: "Prisma", tech: "Schema-first ORM, migrations, type-safe queries" },
+        { layer: "PostgreSQL", tech: "Relational storage for finished games/rounds/rolls" },
+        { layer: "Zod", tech: "Request body validation on the backend" },
+      ],
+      architectureDiagram: `flowchart LR
+    FE["Frontend<br/>Next.js 14 (App Router)<br/>TypeScript · port 3000"]
+    BE["Backend<br/>Node.js + Express<br/>TypeScript · port 4000"]
+    DB[("PostgreSQL<br/>via Prisma ORM")]
+
+    FE <-->|"HTTP/REST"| BE
+    BE --> DB`,
+      architectureTree: [
+        {
+          name: "seven-lever/",
+          children: [
+            {
+              name: "frontend/",
+              comment: "Next.js 14",
+              children: [
+                {
+                  name: "app/",
+                  children: [
+                    { name: "page.tsx", comment: "Home / game setup (names, mode, seals)" },
+                    { name: "game/[id]/page.tsx", comment: "Active game screen" },
+                    { name: "history/page.tsx", comment: "Match history and stats" },
+                  ],
+                },
+                {
+                  name: "components/",
+                  children: [
+                    { name: "ui/", comment: "shadcn/ui components" },
+                    {
+                      name: "game/",
+                      children: [
+                        { name: "Dice.tsx", comment: "Dice with Framer Motion animation" },
+                        { name: "HealthBar.tsx", comment: "Seal (health) bar" },
+                        { name: "SealAnimation.tsx", comment: "The hit animation" },
+                        { name: "PlayerPanel.tsx", comment: "Each player's panel" },
+                      ],
+                    },
+                    { name: "layout/" },
+                  ],
+                },
+                { name: "store/gameStore.ts", comment: "Zustand — in-memory game state" },
+                {
+                  name: "lib/",
+                  children: [
+                    { name: "api.ts", comment: "Axios instance + backend calls" },
+                    { name: "gameLogic.ts", comment: "Pure game logic, no side effects" },
+                  ],
+                },
+                { name: "types/game.ts", comment: "Shared types (GameMode, RoundResult, etc.)" },
+              ],
+            },
+            {
+              name: "backend/",
+              comment: "Node.js + Express",
+              children: [
+                {
+                  name: "src/",
+                  children: [
+                    { name: "index.ts", comment: "Entry point — Express config + middlewares" },
+                    {
+                      name: "routes/",
+                      children: [{ name: "games.ts" }, { name: "rounds.ts" }, { name: "stats.ts" }],
+                    },
+                    { name: "controllers/", comment: "Logic for each endpoint" },
+                    { name: "services/", comment: "Business logic, separate from controllers" },
+                    { name: "middlewares/validate.ts", comment: "Zod validation middleware" },
+                    { name: "prisma/client.ts", comment: "PrismaClient singleton" },
+                  ],
+                },
+                { name: "prisma/schema.prisma", comment: "Database schema" },
+              ],
+            },
+          ],
+        },
+      ],
+      schemaDiagrams: [
+        {
+          key: "main",
+          mermaid: `erDiagram
+    Player ||--o{ Game : "plays as player1"
+    Player ||--o{ Game : "plays as player2"
+    Player ||--o{ Round : loses
+    Game ||--o{ Round : contains
+    Round ||--o{ Roll : contains
+
+    Player {
+        string id PK
+        string name
+    }
+    Game {
+        string id PK
+        string player1Id FK
+        string player2Id FK
+        int maxSeals "configurable 3-10"
+        enum mode "CARDS / SEALS"
+        enum status "IN_PROGRESS / FINISHED"
+        string winnerId "nullable"
+    }
+    Round {
+        string id PK
+        string gameId FK
+        int roundNumber
+        string activePlayer "player1 / player2"
+        int targetNumber "set by the first valid roll"
+        enum result "WON / LOST"
+        string loserId FK
+    }
+    Roll {
+        string id PK
+        string roundId FK
+        int die1
+        int die2
+        int total
+    }`,
+        },
+      ],
+      apiExampleRequest: `{
+  "player1Name": "Cristian",
+  "player2Name": "Sebas",
+  "mode": "SEALS",
+  "maxSeals": 5
+}`,
+      apiExampleResponse: `{
+  "id": "clx1a2b3c",
+  "player1": { "id": "clx1...", "name": "Cristian" },
+  "player2": { "id": "clx2...", "name": "Sebas" },
+  "mode": "SEALS",
+  "maxSeals": 5,
+  "status": "IN_PROGRESS",
+  "createdAt": "2026-09-03T18:00:00.000Z"
+}`,
+      gettingStarted: {
+        steps: [
+          {
+            key: "db",
+            commands: `docker compose up -d`,
+            env: `DATABASE_URL=postgresql://seven:lever123@postgres:5432/seven_lever
+PORT=4000`,
+          },
+          {
+            key: "backend",
+            commands: `cd backend
+npm install
+npx prisma migrate dev
+npm run dev`,
+          },
+          {
+            key: "frontend",
+            commands: `cd frontend
+npm install
+npm run dev`,
+            env: `NEXT_PUBLIC_API_URL=http://localhost:4000/api`,
+          },
+        ],
+      },
+    },
   },
   {
     id: "chohealth",
