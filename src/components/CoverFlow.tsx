@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import NextImage from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -58,6 +58,23 @@ export default function CoverFlow({
   const reduceMotion = useReducedMotion() ?? false;
   const [active, setActive] = useState(defaultActive);
   const showMoreSoon = !!moreSoonLabel;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isInViewRef = useRef(false);
+
+  // Only this carousel's own keyboard shortcuts should fire — track whether it's
+  // the one actually in view, so scrolling to another shelf doesn't move this one too.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isInViewRef.current = entry.isIntersecting && entry.intersectionRatio >= 0.6;
+      },
+      { threshold: [0, 0.6, 1] }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Restore whichever card the visitor last had active (e.g. after visiting a
   // detail page and coming back) instead of always resetting to the default.
@@ -90,6 +107,7 @@ export default function CoverFlow({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (!isInViewRef.current) return;
       const target = e.target as HTMLElement | null;
       const typing =
         target &&
@@ -106,7 +124,7 @@ export default function CoverFlow({
   const activeItem = active < items.length ? items[active] : null;
 
   return (
-    <div className="relative flex flex-col items-center">
+    <div ref={containerRef} className="relative flex flex-col items-center">
       {/* ambient glow */}
       <motion.div
         aria-hidden
