@@ -29,7 +29,7 @@ const COMMANDS: CommandEntry[] = [
   { cmd: "experience", desc: "Summary of all professional work" },
   { cmd: "experience <name>", desc: "Details on one client project" },
   { cmd: "references", desc: "Summary of all references" },
-  { cmd: "references <name>", desc: "Details on one reference" },
+  { cmd: "references <name>", desc: "Details on one reference (or: reference -<name>)" },
   { cmd: "skills", desc: "Tech I actually use" },
   { cmd: "contact", desc: "Say hi" },
   { cmd: "clear", desc: "Clear the screen" },
@@ -200,7 +200,8 @@ export default function TerminalSection() {
         break;
       }
 
-      case "references": {
+      case "references":
+      case "reference": {
         if (!arg) {
           padList(referenceEntries.map((e) => ({ name: e.name, sub: e.role }))).forEach(out);
           out('type "references <name>" for details on one');
