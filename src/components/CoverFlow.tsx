@@ -9,6 +9,13 @@ import { useCoverTransition } from "@/components/TransitionProvider";
 
 const SPACING = 350;
 
+/** True only for an actual page reload (F5) — not a fresh visit or SPA back/forward navigation. */
+function isHardReload(): boolean {
+  if (typeof performance === "undefined") return false;
+  const [nav] = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+  return nav?.type === "reload";
+}
+
 export interface CoverFlowItem {
   id: string;
   gradient: string;
@@ -78,7 +85,9 @@ export default function CoverFlow({
 
   // Restore whichever card the visitor last had active (e.g. after visiting a
   // detail page and coming back) instead of always resetting to the default.
+  // A hard reload is treated as a fresh visit, so it starts from the default card instead.
   useEffect(() => {
+    if (isHardReload()) return;
     const stored = sessionStorage.getItem(storageKey);
     if (!stored) return;
     const idx = items.findIndex((p) => p.id === stored);
