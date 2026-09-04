@@ -39,6 +39,34 @@ export default function TransitionProvider({ children }: { children: React.React
     }
   }, []);
 
+  // Manual scroll restoration: the browser's own restore-on-back was disabled above
+  // (needed to stop reloads from landing at a stale position), so without this, going
+  // back from a detail page keeps whatever scrollY the detail page had instead of
+  // returning to where the card was. Remember scrollY per pathname as the visitor
+  // scrolls, and restore it on any back/forward (browser button, mobile back gesture,
+  // or our own goBack()) — all of these fire a native popstate event.
+  useEffect(() => {
+    const scrollKey = (pathname: string) => `scrollY:${pathname}`;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        sessionStorage.setItem(scrollKey(window.location.pathname), String(window.scrollY));
+      });
+    };
+    const onPopState = () => {
+      const saved = sessionStorage.getItem(scrollKey(window.location.pathname));
+      window.setTimeout(() => window.scrollTo(0, saved ? parseInt(saved, 10) : 0), 80);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, []);
+
   const navigate = useCallback(
     (href: string, destColor: string) => {
       if (reduceMotion) {
