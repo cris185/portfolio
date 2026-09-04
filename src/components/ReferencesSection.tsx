@@ -33,14 +33,14 @@ export default async function ReferencesSection() {
         {references.map((r) => (
           <div
             key={r.id}
-            className="flex flex-col items-center rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center transition-colors hover:border-white/20"
+            className="flex h-full flex-col items-center rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center transition-colors hover:border-white/20"
           >
             <div className="relative h-20 w-20 overflow-hidden rounded-full ring-2 ring-white/10">
               <Image src={r.photo} alt={r.name} fill sizes="80px" className="object-cover" />
             </div>
             <div className="mt-4 font-display text-sm font-semibold text-white">{r.name}</div>
             <p className="mt-1.5 text-[11px] leading-relaxed text-muted">{r.role}</p>
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-auto flex items-center gap-2 pt-4">
               <a
                 href={r.linkedin}
                 target="_blank"
