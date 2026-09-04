@@ -691,5 +691,10 @@
         "Real-time analytics on conversations, leads, and engagement"
       ]
     }
+  },
+  "references": {
+    "sectionLabel": "References",
+    "sub": "People I've worked and built with, in their own words.",
+    "portfolio": "Portfolio"
   }
 }

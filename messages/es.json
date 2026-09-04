@@ -691,5 +691,10 @@
         "Analítica en tiempo real de conversaciones, leads y engagement"
       ]
     }
+  },
+  "references": {
+    "sectionLabel": "Referencias",
+    "sub": "Personas con las que he trabajado y construido, en sus propias palabras.",
+    "portfolio": "Portafolio"
   }
 }

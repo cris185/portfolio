@@ -4,6 +4,7 @@ import HudBar from "@/components/HudBar";
 import Hero from "@/components/Hero";
 import CoverFlow from "@/components/CoverFlow";
 import ProfessionalSection from "@/components/ProfessionalSection";
+import ReferencesSection from "@/components/ReferencesSection";
 import TerminalSection from "@/components/TerminalSection";
 import { projects } from "@/lib/projects";
 
@@ -64,6 +65,7 @@ export default async function HomePage() {
       </div>
 
       <ProfessionalSection />
+      <ReferencesSection />
       <TerminalSection />
     </main>
   );
