@@ -40,7 +40,7 @@ export default async function ReferencesSection() {
             </div>
             <div className="mt-4 font-display text-sm font-semibold text-white">{r.name}</div>
             <p className="mt-1.5 text-[11px] leading-relaxed text-muted">{r.role}</p>
-            <div className="mt-auto flex items-center gap-2 pt-4">
+            <div className="mt-auto flex w-[72px] items-center justify-center gap-2 pt-4">
               <a
                 href={r.linkedin}
                 target="_blank"
@@ -50,7 +50,7 @@ export default async function ReferencesSection() {
               >
                 <LinkedinIcon className="h-4 w-4" />
               </a>
-              {r.portfolio ? (
+              {r.portfolio && (
                 <a
                   href={r.portfolio}
                   target="_blank"
@@ -60,8 +60,6 @@ export default async function ReferencesSection() {
                 >
                   <Globe className="h-4 w-4" />
                 </a>
-              ) : (
-                <span aria-hidden className="h-8 w-8" />
               )}
             </div>
           </div>
