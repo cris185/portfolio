@@ -97,7 +97,7 @@ export default function TransitionProvider({ children }: { children: React.React
                   height: "70vh",
                   transform: "rotate(-14deg)",
                   transformOrigin: "left center",
-                  clipPath: "polygon(0 0, 100% 0, calc(100% - 220px) 100%, 0 100%)",
+                  clipPath: "polygon(0 0, 100% 0, 90% 100%, 0 100%)",
                 }}
                 initial={{ x: "-130%" }}
                 animate={{ x: phase === "covering" ? "0%" : "130%" }}

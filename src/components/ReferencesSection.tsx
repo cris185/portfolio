@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
+import { Globe } from "lucide-react";
 import { LinkedinIcon } from "@/components/icons";
 import { references } from "@/lib/references";
 
@@ -50,16 +50,18 @@ export default async function ReferencesSection() {
               >
                 <LinkedinIcon className="h-4 w-4" />
               </a>
-              {r.portfolio && (
+              {r.portfolio ? (
                 <a
                   href={r.portfolio}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-8 items-center gap-1 rounded-full border border-white/10 px-3 font-mono text-[10.5px] text-muted transition-colors hover:border-accent hover:text-accent"
+                  aria-label={`${r.name} — ${t("portfolio")}`}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-muted transition-colors hover:border-accent hover:text-accent"
                 >
-                  {t("portfolio")}
-                  <ArrowUpRight className="h-3 w-3" />
+                  <Globe className="h-4 w-4" />
                 </a>
+              ) : (
+                <span aria-hidden className="h-8 w-8" />
               )}
             </div>
           </div>

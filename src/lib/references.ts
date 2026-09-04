@@ -56,7 +56,7 @@ export const references: Reference[] = [
   {
     id: "sebastian-machado",
     name: "Sebastián Machado",
-    role: "Fullstack Developer",
+    role: "Fullstack Developer | Tech Lead",
     photo: "https://minio-api.cristianpuentes.com/portfolio-media/references/sebastian-machado.jpg",
     linkedin: "https://www.linkedin.com/in/sebastian-machado-89a476192/",
     portfolio: "https://portfolio-umber-five-71.vercel.app/?lang=es#experience",

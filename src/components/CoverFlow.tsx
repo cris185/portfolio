@@ -4,10 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import NextImage from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { ImageIcon, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageIcon, Lock } from "lucide-react";
 import { useCoverTransition } from "@/components/TransitionProvider";
 
 const SPACING = 350;
+const SWIPE_THRESHOLD = 60;
 
 /** True only for an actual page reload (F5) — not a fresh visit or SPA back/forward navigation. */
 function isHardReload(): boolean {
@@ -137,6 +138,8 @@ export default function CoverFlow({
   }, [active, select, openActive]);
 
   const activeItem = active < items.length ? items[active] : null;
+  const atStart = active <= 0;
+  const atEnd = active >= (showMoreSoon ? items.length : items.length - 1);
 
   return (
     <div ref={containerRef} className="relative flex flex-col items-center">
@@ -167,12 +170,39 @@ export default function CoverFlow({
       </div>
 
       {/* shelf */}
-      <div
-        className="relative mt-8 h-[380px] w-full"
-        style={{ perspective: 1600 }}
-        role="listbox"
-        aria-label={ariaLabel}
-      >
+      <div className="relative mt-8 w-full">
+        <button
+          type="button"
+          onClick={() => select(active - 1)}
+          disabled={atStart}
+          aria-label="Previous"
+          className="absolute left-1 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/70 backdrop-blur-sm transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:pointer-events-none disabled:opacity-25 sm:left-2"
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={() => select(active + 1)}
+          disabled={atEnd}
+          aria-label="Next"
+          className="absolute right-1 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/70 backdrop-blur-sm transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:pointer-events-none disabled:opacity-25 sm:right-2"
+        >
+          <ChevronRight size={18} />
+        </button>
+
+        <motion.div
+          className="relative h-[380px] w-full touch-pan-y"
+          style={{ perspective: 1600 }}
+          role="listbox"
+          aria-label={ariaLabel}
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.12}
+          onDragEnd={(_, info) => {
+            if (info.offset.x < -SWIPE_THRESHOLD) select(active + 1);
+            else if (info.offset.x > SWIPE_THRESHOLD) select(active - 1);
+          }}
+        >
         {items.map((item, i) => {
           const offset = i - active;
           if (Math.abs(offset) > 2) return null;
@@ -261,6 +291,7 @@ export default function CoverFlow({
               </motion.button>
             );
           })()}
+        </motion.div>
       </div>
     </div>
   );
