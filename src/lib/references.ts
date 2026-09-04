@@ -31,6 +31,20 @@ export const references: Reference[] = [
     linkedin: "https://www.linkedin.com/in/elias-jimenez-diz-9394a1263/",
   },
   {
+    id: "reinaldo-orozco",
+    name: "Reinaldo Orozco",
+    role: "Full Stack Engineer · React · Next.js · Node.js · TypeScript | 5+ yrs building scalable products | Now engineering AI/LLM agent environments (MCP)",
+    photo: "https://minio-api.cristianpuentes.com/portfolio-media/references/reinaldo-orozco.jpg",
+    linkedin: "https://www.linkedin.com/in/reiorozco/",
+  },
+  {
+    id: "santiago-rivera",
+    name: "Santiago Rivera",
+    role: "Ingeniero de IA Generativa | Automatización de Procesos | Desarrollador Fullstack JS/TS",
+    photo: "https://minio-api.cristianpuentes.com/portfolio-media/references/santiago-rivera.jpg",
+    linkedin: "https://www.linkedin.com/in/santiago-rivera-10abvc/",
+  },
+  {
     id: "alejandro-alvarez",
     name: "Alejandro Álvarez",
     role: "AI Engineer | Production LLM, Multi-Agent & Agentic Systems (RAG, MCP, n8n) on AWS Bedrock | Generative AI + Full-Stack",
@@ -47,25 +61,11 @@ export const references: Reference[] = [
     portfolio: "https://www.luismidev0.com/",
   },
   {
-    id: "reinaldo-orozco",
-    name: "Reinaldo Orozco",
-    role: "Full Stack Engineer · React · Next.js · Node.js · TypeScript | 5+ yrs building scalable products | Now engineering AI/LLM agent environments (MCP)",
-    photo: "https://minio-api.cristianpuentes.com/portfolio-media/references/reinaldo-orozco.jpg",
-    linkedin: "https://www.linkedin.com/in/reiorozco/",
-  },
-  {
     id: "sebastian-machado",
     name: "Sebastián Machado",
     role: "Fullstack Developer | Tech Lead",
     photo: "https://minio-api.cristianpuentes.com/portfolio-media/references/sebastian-machado.jpg",
     linkedin: "https://www.linkedin.com/in/sebastian-machado-89a476192/",
     portfolio: "https://portfolio-umber-five-71.vercel.app/?lang=es#experience",
-  },
-  {
-    id: "santiago-rivera",
-    name: "Santiago Rivera",
-    role: "Ingeniero de IA Generativa | Automatización de Procesos | Desarrollador Fullstack JS/TS",
-    photo: "https://minio-api.cristianpuentes.com/portfolio-media/references/santiago-rivera.jpg",
-    linkedin: "https://www.linkedin.com/in/santiago-rivera-10abvc/",
   },
 ];
