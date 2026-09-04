@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import NextImage from "next/image";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useDragControls, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, ImageIcon, Lock } from "lucide-react";
 import { useCoverTransition } from "@/components/TransitionProvider";
@@ -141,6 +141,34 @@ export default function CoverFlow({
   const atStart = active <= 0;
   const atEnd = active >= (showMoreSoon ? items.length : items.length - 1);
 
+  // Only hand a gesture off to Framer's drag machinery once it's confirmed to be an
+  // intentional horizontal swipe — starting drag tracking on every pointerdown (including
+  // plain clicks/taps) makes Framer run its elastic snap-back on the whole shelf right as
+  // the per-card transition animation kicks off, which is what caused the frame drops on
+  // mouse/touch (keyboard never touches this path, so it was never affected).
+  const dragControls = useDragControls();
+  const dragOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const dragStartedRef = useRef(false);
+
+  const onShelfPointerDown = (e: React.PointerEvent) => {
+    dragOriginRef.current = { x: e.clientX, y: e.clientY };
+    dragStartedRef.current = false;
+  };
+  const onShelfPointerMove = (e: React.PointerEvent) => {
+    const origin = dragOriginRef.current;
+    if (!origin || dragStartedRef.current) return;
+    const dx = e.clientX - origin.x;
+    const dy = e.clientY - origin.y;
+    if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) {
+      dragStartedRef.current = true;
+      dragControls.start(e);
+    }
+  };
+  const onShelfPointerUp = () => {
+    dragOriginRef.current = null;
+    dragStartedRef.current = false;
+  };
+
   return (
     <div ref={containerRef} className="relative flex flex-col items-center">
       {/* ambient glow */}
@@ -196,8 +224,13 @@ export default function CoverFlow({
           role="listbox"
           aria-label={ariaLabel}
           drag="x"
+          dragListener={false}
+          dragControls={dragControls}
           dragConstraints={{ left: 0, right: 0 }}
           dragElastic={0.12}
+          onPointerDown={onShelfPointerDown}
+          onPointerMove={onShelfPointerMove}
+          onPointerUp={onShelfPointerUp}
           onDragEnd={(_, info) => {
             if (info.offset.x < -SWIPE_THRESHOLD) select(active + 1);
             else if (info.offset.x > SWIPE_THRESHOLD) select(active - 1);
