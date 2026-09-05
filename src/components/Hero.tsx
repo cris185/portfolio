@@ -149,7 +149,7 @@ export default async function Hero() {
               <div className="pl-5">
                 <span className="text-[#e0a9d0]">role</span>
                 <span className="text-white/40">:</span>{" "}
-                <span className="text-accent">&quot;Backend &amp; Full Stack&quot;</span>
+                <span className="text-accent">&quot;Systems Engineer&quot;</span>
                 <span className="text-white/40">,</span>
               </div>
               <div className="pl-5">
