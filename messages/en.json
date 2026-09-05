@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Cristian Puentes — Full Stack Developer",
-    "description": "Full stack developer building real products end to end — from the interface down to the server they run on."
+    "title": "Cristian Puentes — Systems Engineer & Full Stack Developer",
+    "description": "Systems & Computer Engineer building real products end to end — from data modeling and backend architecture to the interface."
   },
   "nav": {
     "projects": "Projects",
@@ -11,7 +11,7 @@
   },
   "hero": {
     "name": "Cristian Puentes",
-    "role": "Backend Engineer & Full Stack Developer",
+    "role": "Systems & Computer Engineer — Backend & Full Stack Developer",
     "location": "Cartagena de Indias, Colombia",
     "headlineLine1": "I build products,",
     "headlineLine2": "not just features.",
