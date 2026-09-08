@@ -285,8 +285,10 @@ export default async function ProjectDetailPage({
                           {tp(`demoSpecializations.${doc.specKey}`)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 break-all">
-                        {doc.email}
+                      <div className="flex items-center gap-1.5">
+                        <span className="min-w-0 flex-1 truncate" title={doc.email}>
+                          {doc.email}
+                        </span>
                         <CopyButton value={doc.email} color={project.accentText} />
                       </div>
                       <div className="flex items-center gap-1.5" style={{ color: project.textSecondary }}>
