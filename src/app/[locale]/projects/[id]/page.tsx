@@ -7,6 +7,7 @@ import BackLink from "@/components/BackLink";
 import ProjectGallery from "@/components/ProjectGallery";
 import ProjectDocs from "@/components/ProjectDocs";
 import { GithubIcon } from "@/components/icons";
+import CopyButton from "@/components/CopyButton";
 
 export function generateStaticParams() {
   return projects.map((p) => ({ id: p.id }));
@@ -246,10 +247,14 @@ export default async function ProjectDetailPage({
                     <div className="mb-1 font-medium" style={{ color: project.accentText }}>
                       {acc.label}
                     </div>
-                    <div style={{ color: project.textSecondary }}>
+                    <div className="flex items-center gap-1.5" style={{ color: project.textSecondary }}>
                       {acc.identifierLabel}: <span style={{ color: project.textPrimary }}>{acc.identifier}</span>
+                      <CopyButton value={acc.identifier} color={project.accentText} />
                     </div>
-                    <div style={{ color: project.textSecondary }}>{acc.password}</div>
+                    <div className="flex items-center gap-1.5" style={{ color: project.textSecondary }}>
+                      {acc.password}
+                      <CopyButton value={acc.password} color={project.accentText} />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -280,8 +285,14 @@ export default async function ProjectDetailPage({
                           {tp(`demoSpecializations.${doc.specKey}`)}
                         </span>
                       </div>
-                      <div className="break-all">{doc.email}</div>
-                      <div style={{ color: project.textSecondary }}>{doc.password}</div>
+                      <div className="flex items-center gap-1.5 break-all">
+                        {doc.email}
+                        <CopyButton value={doc.email} color={project.accentText} />
+                      </div>
+                      <div className="flex items-center gap-1.5" style={{ color: project.textSecondary }}>
+                        {doc.password}
+                        <CopyButton value={doc.password} color={project.accentText} />
+                      </div>
                     </div>
                   ))}
                 </div>
