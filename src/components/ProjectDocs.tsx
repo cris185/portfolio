@@ -304,7 +304,7 @@ export default function ProjectDocs({
                 <SectionLabel color={accentText}>{t("systemArchitecture")}</SectionLabel>
                 {docs.architectureDiagram && (
                   <div className="rounded-lg p-5" style={{ border: `1px solid ${pillBorder}`, background: isDark ? "#00000020" : "#ffffff" }}>
-                    <MermaidDiagram chart={docs.architectureDiagram} dark={isDark} />
+                    <MermaidDiagram chart={docs.architectureDiagram} dark={isDark} accentText={accentText} pillBg={pillBg} pillBorder={pillBorder} />
                   </div>
                 )}
                 {safeT(tp, "docs.architectureNote") && (
@@ -332,7 +332,7 @@ export default function ProjectDocs({
                       {dataFlowTitles[flow.key] ?? flow.key}
                     </div>
                     <div className="rounded-lg p-5" style={{ border: `1px solid ${pillBorder}`, background: isDark ? "#00000020" : "#ffffff" }}>
-                      <MermaidDiagram chart={flow.mermaid} dark={isDark} />
+                      <MermaidDiagram chart={flow.mermaid} dark={isDark} accentText={accentText} pillBg={pillBg} pillBorder={pillBorder} />
                     </div>
                   </div>
                 ))}
@@ -567,7 +567,7 @@ export default function ProjectDocs({
                       {schemaDiagramTitles[d.key] ?? d.key}
                     </div>
                     <div className="rounded-lg p-5" style={{ border: `1px solid ${pillBorder}`, background: isDark ? "#00000020" : "#ffffff" }}>
-                      <MermaidDiagram chart={d.mermaid} dark={isDark} />
+                      <MermaidDiagram chart={d.mermaid} dark={isDark} accentText={accentText} pillBg={pillBg} pillBorder={pillBorder} />
                     </div>
                   </div>
                 ))}
