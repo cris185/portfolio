@@ -112,8 +112,8 @@ function Viewport({
     >
       <div
         ref={contentRef}
-        className="flex h-full w-full justify-center [&_svg]:block [&_svg]:max-w-none"
-        style={{ cursor: dragging ? "grabbing" : "grab", touchAction: "none" }}
+        className="flex h-full w-full justify-center select-none [&_svg]:block [&_svg]:max-w-none"
+        style={{ cursor: dragging ? "grabbing" : "grab", touchAction: "none", WebkitUserSelect: "none", userSelect: "none" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
@@ -189,6 +189,11 @@ export default function MermaidDiagram({
         theme: dark ? "dark" : "neutral",
         fontFamily: "var(--font-mono, monospace)",
         securityLevel: "strict",
+        // A bit more breathing room than the defaults — dense flowcharts
+        // (several edges converging on two stacked nodes) otherwise render
+        // with arrowheads and labels crammed right at the node boundary.
+        flowchart: { nodeSpacing: 45, rankSpacing: 65, padding: 12 },
+        er: { entityPadding: 14 },
       });
       try {
         const { svg: rendered } = await mermaid.render(`mmd-${rawId}`, chart);
