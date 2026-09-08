@@ -574,7 +574,7 @@ npm run db:seed             # loads a sample workspace (optional)`,
 
     BILL -->|"Checkout, Setup Intents, webhook"| STRIPE
     BILL -->|"Orders API"| PAYPAL
-    AUTH -->|"Transactional email, SMTP"| POSTAL`,
+    AUTH --> POSTAL`,
       schemaDiagrams: [
         {
           key: "identity",
