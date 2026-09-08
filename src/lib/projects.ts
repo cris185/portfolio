@@ -497,7 +497,7 @@ npm run db:seed             # loads a sample workspace (optional)`,
     accentText: "#1d4ed8",
     pillBg: "#1d4ed80f",
     pillBorder: "#1d4ed82a",
-    techStack: ["Django", "Next.js", "PostgreSQL", "Stripe", "Docker"],
+    techStack: ["Django", "Next.js", "PostgreSQL", "Stripe", "Medplum", "Docker"],
     hasProblem: true,
     hasStats: true,
     demoAccounts: {
@@ -520,11 +520,12 @@ npm run db:seed             # loads a sample workspace (optional)`,
       fullStack: [
         { layer: "Backend", tech: "Django 6, Django REST Framework, djangorestframework-simplejwt" },
         { layer: "Database", tech: "PostgreSQL (production, via dj-database-url), SQLite (local fallback)" },
-        { layer: "Media storage", tech: "Cloudinary" },
+        { layer: "Media storage", tech: "MinIO (S3-compatible, self-hosted)" },
+        { layer: "Secure messaging", tech: "Medplum (self-hosted, FHIR-native)" },
         { layer: "Static files", tech: "Whitenoise" },
         { layer: "Admin UI", tech: "Django Jazzmin" },
         { layer: "Payments", tech: "Stripe (Checkout, Setup Intents, webhooks), PayPal (Orders API)" },
-        { layer: "Email", tech: "SendGrid" },
+        { layer: "Email", tech: "Postal (self-hosted SMTP)" },
         { layer: "Frontend", tech: "Next.js 16 (App Router), React 19, TypeScript" },
         { layer: "UI", tech: "shadcn/ui, @base-ui/react, Tailwind CSS v4, Framer Motion" },
         { layer: "i18n", tech: "next-intl (English/Spanish)" },
@@ -538,15 +539,17 @@ npm run db:seed             # loads a sample workspace (optional)`,
         AUTH["userauths<br/>JWT authentication"]
         DOC["doctor"]
         PAT["patient"]
-        BASE["base<br/>scheduling / clinical core"]
+        BASE["base<br/>scheduling / clinical core / messaging"]
         BILL["billing"]
+        MED["medplum<br/>FHIR client"]
     end
 
-    DB[("PostgreSQL (prod)<br/>SQLite (local)")]
-    MEDIA[("Cloudinary<br/>media storage")]
+    DB[("PostgreSQL (prod)<br/>SQLite (local)<br/>workflow + thread metadata, never PHI")]
+    MINIO[("MinIO<br/>S3-compatible media storage")]
     STRIPE[["Stripe"]]
     PAYPAL[["PayPal"]]
-    SENDGRID[["SendGrid"]]
+    POSTAL[["Postal<br/>self-hosted SMTP"]]
+    MEDPLUM[("Medplum<br/>self-hosted FHIR server<br/>Communication / Binary resources")]
 
     FE -->|"REST, JWT bearer token"| AUTH
     FE --> DOC
@@ -560,13 +563,16 @@ npm run db:seed             # loads a sample workspace (optional)`,
     BASE --> DB
     BILL --> DB
 
-    DOC --> MEDIA
-    PAT --> MEDIA
-    BASE --> MEDIA
+    DOC --> MINIO
+    PAT --> MINIO
+    BASE --> MINIO
+
+    BASE -->|"open/close thread,<br/>send/read message, attachments"| MED
+    MED -->|"OAuth2 client_credentials"| MEDPLUM
 
     BILL -->|"Checkout, Setup Intents, webhook"| STRIPE
     BILL -->|"Orders API"| PAYPAL
-    AUTH -->|"Transactional email"| SENDGRID`,
+    AUTH -->|"Transactional email, SMTP"| POSTAL`,
       schemaDiagrams: [
         {
           key: "identity",
@@ -736,6 +742,35 @@ npm run db:seed             # loads a sample workspace (optional)`,
         string status
     }`,
         },
+        {
+          key: "messaging",
+          mermaid: `erDiagram
+    APPOINTMENT ||--o| MESSAGE_THREAD : opens
+    PATIENT ||--o{ MESSAGE_THREAD : "participates in"
+    DOCTOR ||--o{ MESSAGE_THREAD : "participates in"
+    MESSAGE_THREAD ||--o{ THREAD_MESSAGE : contains
+    MESSAGE_THREAD ||--o{ THREAD_READ : "read receipts"
+
+    MESSAGE_THREAD {
+        string sid
+        string status "Open / Closed"
+        datetime opened_at
+        datetime closes_at "grace period, capped at 90 days"
+        datetime last_message_at "denormalized for inbox sort"
+        int message_count
+    }
+    THREAD_MESSAGE {
+        string sid
+        string sender_role "patient / doctor"
+        string medplum_communication_id UK "pointer, not a copy"
+        boolean has_attachments
+        string attachment_binary_id "Medplum Binary id"
+        datetime sent_at
+    }
+    THREAD_READ {
+        datetime last_read_at
+    }`,
+        },
       ],
       gettingStarted: {
         steps: [
@@ -766,9 +801,11 @@ DATABASE_PASSWORD=
 DATABASE_HOST=
 DATABASE_PORT=
 
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_STORAGE_BUCKET_NAME=
+AWS_S3_ENDPOINT_URL=           # e.g. https://minio.example.com
+AWS_S3_REGION_NAME=us-east-1
 
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
@@ -777,9 +814,17 @@ PAYPAL_CLIENT_ID=
 PAYPAL_CLIENT_SECRET=
 PAYPAL_MODE=sandbox            # or "live"
 
-SENDGRID_API_KEY=
+EMAIL_HOST=
+EMAIL_PORT=25
+EMAIL_USE_TLS=False
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
 DEFAULT_FROM_EMAIL=
-EMAIL_DOMAIN=`,
+
+MEDPLUM_ENABLED=False           # set True once a Medplum instance is reachable
+MEDPLUM_BASE_URL=
+MEDPLUM_CLIENT_ID=
+MEDPLUM_CLIENT_SECRET=`,
           },
           {
             key: "frontend",

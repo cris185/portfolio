@@ -43,7 +43,8 @@
         "Stripe and PayPal payments with idempotent webhook handling and audited refund workflows",
         "Atomic consultation flow — diagnosis, prescriptions and lab orders are created together or not at all",
         "Invoices, prescriptions and lab orders generated as real PDF documents with ReportLab",
-        "QR pickup codes, SendGrid transactional email, and full English/Spanish support"
+        "QR pickup codes, self-hosted transactional email via Postal, and full English/Spanish support",
+        "Secure patient-doctor messaging on Medplum (self-hosted, FHIR-native), with a thread lifecycle tied to clinical follow-up need rather than a fixed calendar"
       ],
       "docs": {
         "problemLong": "Booking a doctor, getting a prescription filled, and paying for care are usually three disconnected experiences for a patient — a phone call to schedule, a paper slip for the pharmacy, a separate portal (or none at all) to see the bill. CHOHEALTH is built to unify that flow into a single product: a patient books an appointment, the doctor produces a medical record and prescription during the visit, the patient fills it through an integrated pharmacy with delivery tracking, and every one of those steps generates a consistent, auditable invoice — all in one authenticated session, in the patient's own language. The engineering goal behind the project was not to build another CRUD demo, but to practice the parts of healthcare software that are unforgiving of shortcuts: preventing a double-booked doctor, keeping a financial ledger that cannot silently drift from reality, reconciling two different payment gateways against the same billing model, and enforcing who is allowed to see or do what. This is an active portfolio project, not a finished product.",
@@ -56,7 +57,9 @@
           { "title": "Role stored on the user (user_type) but never trusted alone for authorization", "rationale": "Custom DRF permissions (IsDoctor, IsPatient) check the role and that the related profile object actually exists. A user who claims a role without a matching profile is not authorized — closing a gap that a naive request.user.user_type == 'Doctor' check would leave open." },
           { "title": "Denormalized doctor rating, kept in sync via signals", "rationale": "The doctor list/search is a hot read path; recomputing an average on every request does not scale as reviews grow. A post_save/post_delete signal on Review recalculates and persists the aggregate instead." },
           { "title": "DATABASE_URL-driven database selection (PostgreSQL in production via dj-database-url, SQLite fallback locally)", "rationale": "Zero-configuration local development with no external dependency, production-grade database in deployment without touching code." },
-          { "title": "Cloudinary as the media backend", "rationale": "Offloads file storage, transformation and CDN delivery instead of managing a media server; behaves identically in local development and production." },
+          { "title": "MinIO (S3-compatible object storage) as the media backend", "rationale": "Self-hosted, API-compatible with the same django-storages S3 backend production code would use against real AWS S3 — file storage that behaves identically in local development and production without a dependency on a third-party SaaS quota." },
+          { "title": "Postal (self-hosted mailer) for transactional email over SMTP", "rationale": "Owns the full delivery pipeline (SPF/DKIM, bounce handling, a real MTA) without depending on a third-party API's free-tier limits, on the same self-hosted infrastructure as the rest of the platform." },
+          { "title": "Medplum (self-hosted, FHIR-native, github.com/medplum/medplum) for secure patient-doctor messaging, with Postgres holding only metadata", "rationale": "Message content and attachments are PHI and belong in a system built around FHIR's encryption, access-control and interoperability standards, not bolted onto the app's own database. Postgres (MessageThread/ThreadMessage) never stores a message body or file — only participants, timestamps and read state — so the inbox can list and sort without a Medplum round trip. Credit to the Medplum team and its open-source community: this integration deliberately leans on their standards-compliant server instead of reinventing encrypted messaging from scratch." },
           { "title": "Native fetch wrapper (src/lib/api.ts) instead of a heavier HTTP client on the frontend", "rationale": "One place to attach the JWT bearer token, the Accept-Language header, and multipart handling — no extra runtime dependency for what is a thin, predictable API layer." },
           { "title": "Next.js App Router with two role-scoped route trees (/dashboard/doctor, /dashboard/patient)", "rationale": "File-system routing maps directly onto the two very different user journeys, and each dashboard tree ships only the components its role needs." }
         ],
@@ -116,17 +119,29 @@
               "A user's role (Patient / Doctor / Superuser) is necessary but not sufficient for authorization — access also requires the matching profile object to exist.",
               "Access tokens expire after 30 minutes; refresh tokens after 7 days, with rotation enabled so a captured refresh token can be used only once before it is invalidated."
             ]
+          },
+          {
+            "category": "Secure messaging",
+            "rules": [
+              "A thread opens automatically the moment an appointment's payment succeeds (i.e. it becomes Confirmed) — never at booking, and never at signup — with one exception: a lab-only visit or a non-Consultation service never gets a thread, since there is no doctor conversation to have.",
+              "Completing a consultation grants a grace period instead of closing the thread outright: 14 days by default, extended to 30 days if the visit left a pending lab order (not yet Completed/Cancelled) or any prescription to follow up on — capped at 90 days from when the thread first opened, so a lab result that never comes back doesn't keep the channel open indefinitely.",
+              "Cancelling the appointment, by either party, closes its thread immediately — no grace period for a visit that never happened.",
+              "A doctor can also end the conversation manually at any time via a dedicated \"End conversation\" action, independent of the appointment's own lifecycle.",
+              "Message content and attachments live in Medplum, never in CHOHEALTH's own database — ThreadMessage stores only who sent it, when, and a pointer to fetch the content; the thread list endpoint deliberately excludes any message preview, for the same reason.",
+              "If Medplum is unreachable, a circuit breaker trips after 3 consecutive failures and messaging endpoints answer 503 for 60 seconds; every other feature (booking, payments, prescriptions) is unaffected."
+            ]
           }
         ],
-        "architectureNote": "Each Django app owns its own models and views but shares one PostgreSQL/SQLite database; there is no service boundary between them at the data layer, by design — this is a modular monolith, not a microservice system, which matches the project's actual scale and avoids paying a distributed-systems tax it does not need.",
-        "schemaIntro": "The schema is split across four diagrams that mirror the Django apps, to keep each one legible. Primary keys are UUID-like short IDs (sid) exposed to the API; numeric IDs stay internal.",
+        "architectureNote": "Each Django app owns its own models and views but shares one PostgreSQL/SQLite database; there is no service boundary between them at the data layer, by design — this is a modular monolith, not a microservice system, which matches the project's actual scale and avoids paying a distributed-systems tax it does not need. Medplum is the one deliberate exception: it is a separate, self-hosted FHIR server, not another table in the same database, because message content and attachments are PHI that belongs behind FHIR's own standards rather than inside the monolith's schema.",
+        "schemaIntro": "The schema is split across five diagrams that mirror the Django apps, to keep each one legible. Primary keys are UUID-like short IDs (sid) exposed to the API; numeric IDs stay internal.",
         "schemaDiagramTitles": {
           "identity": "Identity and care team",
           "clinical": "Scheduling and clinical records",
           "pharmacy": "Pharmacy and delivery",
-          "billing": "Billing"
+          "billing": "Billing",
+          "messaging": "Secure messaging"
         },
-        "schemaNote": "Invoice.appointment and Invoice.medicine_order are both nullable one-to-one fields; a database CheckConstraint requires exactly one of them to be set, which an entity-relationship diagram cannot express directly — it is enforced in billing/models.py, not only in application code.",
+        "schemaNote": "Invoice.appointment and Invoice.medicine_order are both nullable one-to-one fields; a database CheckConstraint requires exactly one of them to be set, which an entity-relationship diagram cannot express directly — it is enforced in billing/models.py, not only in application code. The Secure messaging diagram is worth a second look too: notice what's absent from THREAD_MESSAGE — no message body, no file. That content exists only as FHIR resources in Medplum, so this table intentionally cannot leak PHI even if the whole Postgres database were dumped.",
         "roles": [
           {
             "role": "Patient",
@@ -139,6 +154,7 @@
               { "label": "Delivery tracking", "text": "list every delivery-mode order and poll a live per-order tracker (see Known limitations for how \"live\" is implemented)." },
               { "label": "Payments", "text": "Stripe/PayPal checkout, manage saved cards, personal payment history and totals." },
               { "label": "Reviews", "text": "rate and comment on any doctor from a completed appointment (one per appointment, editable), and separately browse a public feed of every review across every doctor, or one doctor's reviews specifically — not limited to the patient's own submissions." },
+              { "label": "Secure messaging", "text": "message the doctor from a confirmed (or recently completed) appointment's thread, see unread counts, and send image/PDF attachments, built on Medplum." },
               { "label": "Notifications", "text": "list, filter by read/unread, mark as read, delete." }
             ]
           },
@@ -152,6 +168,7 @@
               { "label": "Cancel/reschedule", "text": "cancel a confirmed appointment (always a full refund to the patient) or reschedule it against their own live schedule." },
               { "label": "Payments and stats", "text": "own received payments and revenue stats; a dashboard summarizing appointment counts, patient counts, average rating, review count, revenue, and unread notifications." },
               { "label": "Reviews", "text": "read own reviews via the public per-doctor endpoint; cannot respond to, edit, or delete a patient's review." },
+              { "label": "Secure messaging", "text": "same thread view from the doctor's side, plus the ability to end a conversation manually before its grace period would otherwise expire." },
               { "label": "Notifications", "text": "list, filter, mark as read, delete." }
             ]
           }
@@ -172,11 +189,11 @@
         },
         "limitations": [
           "Delivery tracking is simulated, not real. There is no courier integration, webhook, or geolocation anywhere in the codebase. MedicineDelivery.stage is computed on every poll from elapsed time since the order was paid — 5 fixed stages, 30 seconds each, about 2 minutes end to end — not from any real-world event. The \"delivery completed\" email is only sent the next time the patient's own client polls the tracking endpoint after the final stage is reached; there is no background worker guaranteeing it fires if the patient never reopens that screen. The next real step here would be a courier webhook (or at minimum a scheduled task instead of client-triggered polling) — genuinely building that out, rather than the current simulation, is on the roadmap.",
-          "Doctor availability has no self-service API yet. A doctor's weekly schedule (DoctorSchedule) can currently only be created or edited through the Django admin — there is no \"manage my availability\" endpoint on the doctor's own dashboard."
+          "Doctor availability has no self-service API yet. A doctor's weekly schedule (DoctorSchedule) can currently only be created or edited through the Django admin — there is no \"manage my availability\" endpoint on the doctor's own dashboard.",
+          "Secure messaging requires a running Medplum instance to actually send messages. MEDPLUM_ENABLED=False (the default) disables the feature cleanly — booking, payments, and clinical records behave identically either way — but with it enabled, a Medplum outage does surface as a 503 on the messaging endpoints specifically."
         ],
         "roadmap": [
-          "Secure patient-doctor chat via Medplum — an open-source, FHIR-native healthcare platform. Medplum is being adopted deliberately, not as a generic chat feature: it is built around the encryption, access-control and interoperability standards that healthcare data exchange is generally expected to meet, which is the same bar this integration is meant to hold the project to, rather than building bespoke messaging infrastructure that would need to reinvent those guarantees.",
-          "Additional Medplum-backed capabilities (structured FHIR resource sync, clinical data exchange) as the integration matures.",
+          "Structured FHIR resource sync, extending the Medplum integration beyond messaging — mirroring appointments, prescriptions and lab orders as FHIR resources (Encounter, MedicationRequest, ServiceRequest) via a write-through outbox, with Postgres remaining the source of truth throughout.",
           "A real delivery-tracking implementation, replacing the current time-based simulation — likely a courier webhook (or, at minimum, a scheduled background task) driving MedicineDelivery.stage off real events instead of elapsed time on read.",
           "A doctor-facing schedule management endpoint, so weekly availability no longer requires the Django admin."
         ],
@@ -184,7 +201,10 @@
           "prerequisites": [
             "Python 3.13+ (the bundled venv uses 3.14)",
             "Node.js 18.18+ (20+ recommended for Next.js 16)",
-            "API keys for Stripe, PayPal, Cloudinary and SendGrid",
+            "API keys for Stripe and PayPal",
+            "An S3-compatible object store for media (MinIO or AWS S3)",
+            "An SMTP server for transactional email (self-hosted Postal in production; any SMTP server works locally)",
+            "A Medplum instance for secure messaging — optional locally, the feature degrades cleanly when MEDPLUM_ENABLED=False",
             "PostgreSQL (optional locally — falls back to SQLite if DATABASE_URL is unset)"
           ],
           "stepTitles": { "backend": "Backend", "frontend": "Frontend" },
