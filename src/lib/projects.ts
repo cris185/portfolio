@@ -499,7 +499,7 @@ npm run db:seed             # loads a sample workspace (optional)`,
     accentText: "#1d4ed8",
     pillBg: "#1d4ed80f",
     pillBorder: "#1d4ed82a",
-    techStack: ["Django", "Next.js", "PostgreSQL", "Stripe", "Medplum", "Docker"],
+    techStack: ["Django", "Next.js", "PostgreSQL", "Stripe", "Medplum", "Expo", "Docker"],
     hasProblem: true,
     hasStats: true,
     demoAccounts: {
@@ -531,17 +531,23 @@ npm run db:seed             # loads a sample workspace (optional)`,
         { layer: "Frontend", tech: "Next.js 16 (App Router), React 19, TypeScript" },
         { layer: "UI", tech: "shadcn/ui, @base-ui/react, Tailwind CSS v4, Framer Motion" },
         { layer: "i18n", tech: "next-intl (English/Spanish)" },
+        { layer: "Mobile (courier app)", tech: "Expo (Expo Router), React Native, TypeScript" },
+        { layer: "Live map", tech: "react-leaflet + OpenStreetMap tiles (no API key)" },
+        { layer: "Geocoding / address search", tech: "Nominatim (OpenStreetMap, no API key)" },
       ],
       architectureDiagram: `flowchart LR
-    subgraph client["Client"]
-        FE["Next.js 16 (App Router)<br/>React 19 + TypeScript"]
+    subgraph client["Clients"]
+        FE["Next.js 16 (App Router)<br/>React 19 + TypeScript<br/>patient / doctor / admin, and a<br/>read-only courier dashboard"]
+        MOBILE["Expo (React Native)<br/>courier app — background GPS,<br/>offers, stage actions"]
     end
 
     subgraph api["Django REST API"]
         AUTH["userauths<br/>JWT authentication"]
         DOC["doctor"]
         PAT["patient"]
-        BASE["base<br/>scheduling / clinical core / messaging"]
+        BASE["base<br/>scheduling / clinical core / messaging / delivery actions"]
+        DELIV["delivery<br/>courier role, shifts, assignment"]
+        ADMIN["adminpanel<br/>read-only superuser views"]
         BILL["billing"]
         MED["medplum<br/>FHIR client"]
     end
@@ -552,18 +558,26 @@ npm run db:seed             # loads a sample workspace (optional)`,
     PAYPAL[["PayPal"]]
     POSTAL[["Postal<br/>self-hosted SMTP"]]
     MEDPLUM[("Medplum<br/>self-hosted FHIR server<br/>Communication / Binary resources")]
+    NOMINATIM[["Nominatim (OpenStreetMap)<br/>address search / geocoding"]]
 
     FE -->|"REST, JWT bearer token"| AUTH
     FE --> DOC
     FE --> PAT
     FE --> BASE
     FE --> BILL
+    FE --> ADMIN
+    FE -->|"search / reverse geocode<br/>(browser, address picker)"| NOMINATIM
+    MOBILE -->|"REST, JWT bearer token"| AUTH
+    MOBILE --> DELIV
+    MOBILE -->|"start-transit / arrived"| BASE
 
     AUTH --> DB
     DOC --> DB
     PAT --> DB
     BASE --> DB
     BILL --> DB
+    DELIV --> DB
+    ADMIN --> DB
 
     DOC --> MINIO
     PAT --> MINIO
@@ -574,6 +588,7 @@ npm run db:seed             # loads a sample workspace (optional)`,
 
     BILL -->|"Checkout, Setup Intents, webhook"| STRIPE
     BILL -->|"Orders API"| PAYPAL
+    BILL -->|"geocode delivery address<br/>on order creation"| NOMINATIM
     AUTH --> POSTAL`,
       schemaDiagrams: [
         {
@@ -587,7 +602,7 @@ npm run db:seed             # loads a sample workspace (optional)`,
     USER {
         string sid
         string email UK
-        string user_type "Patient / Doctor / Superuser"
+        string user_type "Patient / Doctor / Delivery / Superuser"
         string otp
     }
     DOCTOR {
@@ -680,6 +695,13 @@ npm run db:seed             # loads a sample workspace (optional)`,
     MEDICATION ||--o{ MEDICINE_ORDER_ITEM : "referenced by"
     MEDICINE_ORDER ||--o| MEDICINE_DELIVERY : "tracked by"
     PRESCRIPTION_ITEM ||--o| MEDICINE_ORDER_ITEM : fulfills
+    BRANCH ||--o{ MEDICINE_DELIVERY : "dispatched from"
+    DELIVERY_PERSON ||--o{ MEDICINE_DELIVERY : carries
+    USER ||--o| DELIVERY_PERSON : "has profile"
+    DELIVERY_PERSON ||--o{ DELIVERY_SHIFT : clocks
+    DELIVERY_SHIFT ||--o{ DELIVERY_BREAK : includes
+    MEDICINE_DELIVERY ||--o{ DELIVERY_OFFER : offers
+    DELIVERY_PERSON ||--o{ DELIVERY_OFFER : receives
 
     MEDICINE_ORDER {
         string sid
@@ -687,6 +709,8 @@ npm run db:seed             # loads a sample workspace (optional)`,
         decimal subtotal
         decimal shipping_fee
         decimal total
+        decimal delivery_latitude "set by the patient's map picker"
+        decimal delivery_longitude
         string pickup_code UK "set only once Paid"
     }
     MEDICINE_ORDER_ITEM {
@@ -695,9 +719,36 @@ npm run db:seed             # loads a sample workspace (optional)`,
         decimal total
     }
     MEDICINE_DELIVERY {
-        string stage "picked_up ... delivered"
+        string stage "picked_up / on_the_way / delivered"
+        decimal dest_latitude "confirmed point, or geocoded fallback"
+        decimal dest_longitude
+        file proof_photo
+        decimal proof_latitude "courier's GPS at 'arrived'"
+        decimal proof_longitude
         datetime started_at
         datetime delivered_at
+    }
+    DELIVERY_PERSON {
+        string sid
+        string on_duty_status "off_duty / on_duty / on_break"
+        decimal current_latitude "last background ping"
+        decimal current_longitude
+        datetime location_updated_at
+        string expo_push_token
+    }
+    DELIVERY_SHIFT {
+        datetime clock_in_at
+        datetime clock_out_at "null = shift active"
+    }
+    DELIVERY_BREAK {
+        datetime started_at
+        datetime ended_at "null = break active"
+    }
+    DELIVERY_OFFER {
+        string status "pending / accepted / declined / expired"
+        datetime offered_at
+        datetime responded_at
+        datetime expires_at "45s window"
     }`,
         },
         {
@@ -836,6 +887,13 @@ npm run dev`,
             env: `NEXT_PUBLIC_API_URL=http://localhost:8000/api
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_PAYPAL_CLIENT_ID=`,
+          },
+          {
+            key: "mobile",
+            commands: `cd mobile
+npm install
+npx expo start`,
+            env: `EXPO_PUBLIC_API_URL=http://localhost:8000/api`,
           },
         ],
       },

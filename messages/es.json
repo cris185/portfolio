@@ -44,7 +44,8 @@
         "Flujo de consulta atómico — diagnóstico, prescripciones y órdenes de laboratorio se crean juntos o no se crean",
         "Facturas, prescripciones y órdenes de laboratorio generadas como PDFs reales con ReportLab",
         "Códigos QR de recogida, correo transaccional self-hosted vía Postal, y soporte completo en inglés/español",
-        "Mensajería segura paciente-doctor construida sobre Medplum (self-hosted, nativo en FHIR), con un ciclo de vida atado a la necesidad de seguimiento clínico y no a un calendario fijo"
+        "Mensajería segura paciente-doctor construida sobre Medplum (self-hosted, nativo en FHIR), con un ciclo de vida atado a la necesidad de seguimiento clínico y no a un calendario fijo",
+        "Seguimiento de entregas por GPS real: un rol de repartidor con una app complementaria en Expo/React Native, asignación por proximidad con cascada de oferta/rechazo, un mapa en vivo para el paciente, y prueba de entrega con foto + GPS — sin Celery ni cron en ningún lado, cada paso disparado por un evento real"
       ],
       "docs": {
         "problemLong": "Reservar con un doctor, surtir una prescripción y pagar por la atención suelen ser tres experiencias desconectadas para un paciente — una llamada para agendar, un papel para la farmacia, un portal aparte (o ninguno) para ver la factura. CHOHEALTH está construido para unificar ese flujo en un solo producto: el paciente reserva una cita, el doctor genera un historial clínico y una prescripción durante la consulta, el paciente la surte a través de una farmacia integrada con seguimiento de entrega, y cada uno de esos pasos genera una factura consistente y auditable — todo en una sola sesión autenticada, en el idioma del paciente. El objetivo de ingeniería detrás del proyecto no era construir otra demo CRUD, sino practicar las partes del software de salud que no perdonan atajos: prevenir que un doctor quede doble-reservado, mantener un libro contable que no pueda desviarse silenciosamente de la realidad, reconciliar dos pasarelas de pago distintas contra el mismo modelo de facturación, y hacer cumplir quién puede ver o hacer qué. Este es un proyecto de portafolio activo, no un producto terminado.",
@@ -61,7 +62,10 @@
           { "title": "Postal (mailer self-hosted) para correo transaccional vía SMTP", "rationale": "Es dueño de todo el pipeline de entrega (SPF/DKIM, manejo de rebotes, un MTA real) sin depender de los límites de la capa gratuita de una API de terceros, en la misma infraestructura self-hosted que el resto de la plataforma." },
           { "title": "Medplum (self-hosted, nativo en FHIR, github.com/medplum/medplum) para mensajería segura paciente-doctor, con Postgres guardando solo metadata", "rationale": "El contenido de los mensajes y los adjuntos son PHI y pertenecen a un sistema construido alrededor de los estándares de cifrado, control de acceso e interoperabilidad de FHIR, no atornillados a la base de datos propia de la app. Postgres (MessageThread/ThreadMessage) nunca guarda el cuerpo de un mensaje ni un archivo — solo participantes, marcas de tiempo y estado de lectura — de modo que la bandeja puede listar y ordenar sin un viaje de red a Medplum. Crédito al equipo de Medplum y a su comunidad de código abierto: esta integración se apoya deliberadamente en su servidor conforme a estándares en vez de reinventar mensajería cifrada desde cero." },
           { "title": "Un wrapper nativo de fetch (src/lib/api.ts) en vez de un cliente HTTP más pesado en el frontend", "rationale": "Un solo lugar para adjuntar el bearer token JWT, el header Accept-Language y el manejo de multipart — sin dependencia extra en runtime para lo que es una capa de API delgada y predecible." },
-          { "title": "Next.js App Router con dos árboles de rutas separados por rol (/dashboard/doctor, /dashboard/patient)", "rationale": "El ruteo por sistema de archivos mapea directamente a los dos recorridos de usuario tan distintos, y cada árbol de dashboard envía solo los componentes que su rol necesita." }
+          { "title": "Next.js App Router con árboles de rutas por rol (/dashboard/doctor, /dashboard/patient, /dashboard/delivery, /dashboard/admin)", "rationale": "El ruteo por sistema de archivos mapea directamente a cada recorrido de usuario, muy distinto entre sí, y cada árbol de dashboard envía solo los componentes que su rol necesita." },
+          { "title": "Una app aparte en Expo (React Native) para el rol de repartidor, en vez de otra pestaña del navegador", "rationale": "El rastreo GPS en segundo plano, con la app minimizada o el teléfono bloqueado, es poco confiable o directamente imposible desde la API de Geolocation de un navegador, pero es una capacidad nativa de primera clase (tareas en segundo plano de expo-location). El dashboard web del repartidor es deliberadamente de solo lectura (historial, estadísticas, perfil) — toda acción que depende de la ubicación en vivo ocurre únicamente en la app nativa." },
+          { "title": "Asignación de entregas y expiración de ofertas impulsadas enteramente por eventos reales (un pago exitoso, un repartidor que rechaza, una entrega que se completa), no por un worker programado", "rationale": "Consistente con el resto del código base (el circuit breaker de mensajería segura, el webhook de facturación) — este proyecto deliberadamente no tiene Celery ni cron en ninguna parte. Una oferta expirada se detecta de forma perezosa, la próxima vez que algo la lee o actúa sobre ella, en lugar de una tarea en segundo plano compitiendo contra el reloj." },
+          { "title": "Un pin en el mapa confirmado por el paciente (búsqueda + arrastre, como el selector de dirección de una app de comida a domicilio) en vez de geocodificar texto libre de dirección después del hecho", "rationale": "Geocodificar texto libre contra un servicio como Nominatim puede resolver silenciosamente con la precisión equivocada — todo un vecindario en vez de un edificio — sin ninguna señal visible de que eso ocurrió. Capturar la coordenada que el paciente realmente confirmó en un mapa es estrictamente más confiable que intentar recuperarla del texto después, y es sobre lo que están construidos tanto el geofence como el mapa en vivo del repartidor." }
         ],
         "businessRulesIntro": "Las siguientes reglas están implementadas en código (constraints de modelo, validadores clean(), o clases de permisos), no solo descritas en documentación — cada una corresponde a una salvaguarda específica en el código.",
         "businessRules": [
@@ -96,6 +100,16 @@
             ]
           },
           {
+            "category": "Entrega",
+            "rules": [
+              "El estado de turno de un repartidor (off_duty / on_duty / on_break) determina si el algoritmo de asignación siquiera lo considera candidato — un repartidor fuera de servicio o en descanso nunca recibe una oferta de entrega.",
+              "Un repartidor no puede iniciar un descanso, ni marcar salida, mientras tiene una entrega activamente asignada (cualquier etapa anterior a delivered). Una entrega a la vez, de principio a fin, antes de que se permita el siguiente cambio de estado de turno.",
+              "Una oferta de entrega expira 45 segundos después de generarse si el repartidor no responde; tanto un rechazo como una expiración escalan al siguiente repartidor disponible más cercano, nunca de vuelta a alguien que ya vio esa misma entrega.",
+              "La verificación de geofence al \"llegar\" es una advertencia suave, no un bloqueo duro — de cualquier forma marca la entrega como delivered. Una lectura de GPS (del repartidor o del geocodificador) puede tener suficiente margen de error como para producir un falso negativo, y un repartidor que genuinamente está ahí no debería quedar atascado sin poder cerrar una entrega.",
+              "La prueba de entrega requiere tanto una foto como la posición GPS del repartidor en ese momento exacto — ninguna de las dos se acepta por separado."
+            ]
+          },
+          {
             "category": "Reseñas",
             "rules": [
               "Una reseña solo puede enviarse para una cita con estado Completed, y solo por el paciente dueño de esa cita; ese mismo paciente puede editarla o eliminarla después, y existe una sola reseña por cita.",
@@ -116,7 +130,7 @@
             "category": "Identidad y acceso",
             "rules": [
               "La autenticación es por email, no por username; los usernames se derivan automáticamente y se deduplican con un sufijo numérico.",
-              "El rol de un usuario (Patient / Doctor / Superuser) es necesario pero no suficiente para autorización — el acceso también requiere que exista el objeto de perfil correspondiente.",
+              "El rol de un usuario (Patient / Doctor / Delivery / Superuser) es necesario pero no suficiente para autorización — el acceso también requiere que exista el objeto de perfil correspondiente (la excepción es Superuser, que se valida contra el flag propio de Django is_superuser en vez de un perfil).",
               "Los access tokens expiran a los 30 minutos; los refresh tokens a los 7 días, con rotación habilitada, así que un refresh token capturado solo puede usarse una vez antes de invalidarse."
             ]
           },
@@ -151,7 +165,7 @@
               { "label": "Historial clínico", "text": "acceso de solo lectura a sus propios historiales médicos, prescripciones y órdenes/resultados de laboratorio; descargar PDFs de prescripciones y órdenes de laboratorio bajo demanda." },
               { "label": "Farmacia", "text": "navegar el catálogo público de medicamentos de venta libre, comprar medicamentos — de venta libre o prescritos — mediante un carrito que soporta recogida o entrega, o agrupar todo medicamento prescrito pendiente en una sola solicitud de entrega dedicada." },
               { "label": "Exámenes de laboratorio", "text": "navegar el catálogo público de laboratorio (marcado con una insignia \"gratis para ti\" cuando existe una prescripción coincidente sin reclamar), reservar un examen directamente cuando no requiere prescripción, o gratis contra una que sí la exige." },
-              { "label": "Seguimiento de entregas", "text": "listar cada orden en modalidad de entrega y consultar un tracker en vivo por orden (ver Limitaciones conocidas para cómo está implementado ese \"en vivo\")." },
+              { "label": "Seguimiento de entregas", "text": "listar cada orden en modalidad de entrega y consultar un tracker en vivo por orden — un stepper de solo texto hasta que el repartidor inicia el tránsito, y luego un mapa en vivo con la posición del repartidor y el pin de entrega confirmado." },
               { "label": "Pagos", "text": "checkout con Stripe/PayPal, gestionar tarjetas guardadas, historial y totales de pagos personales." },
               { "label": "Reseñas", "text": "calificar y comentar sobre cualquier doctor a partir de una cita completada (una por cita, editable), y por separado navegar un feed público con todas las reseñas de todos los doctores, o las de un doctor específico — no limitado a las propias." },
               { "label": "Mensajería segura", "text": "escribirle al doctor desde el hilo de una cita confirmada (o completada recientemente), ver contadores de no leídos, y enviar adjuntos de imagen/PDF, construido sobre Medplum." },
@@ -171,6 +185,23 @@
               { "label": "Mensajería segura", "text": "la misma vista de hilo desde el lado del doctor, más la posibilidad de terminar una conversación manualmente antes de que expire su período de gracia." },
               { "label": "Notificaciones", "text": "listar, filtrar, marcar como leídas, eliminar." }
             ]
+          },
+          {
+            "role": "Delivery (repartidor)",
+            "capabilities": [
+              { "label": "Cuenta", "text": "registrarse, iniciar sesión — solo desde la app de Expo (el login web rechaza una cuenta que no sea de repartidor, y viceversa)." },
+              { "label": "Turno", "text": "marcar entrada/salida, iniciar/terminar un descanso — bloqueado mientras tiene una entrega activamente asignada." },
+              { "label": "Ofertas", "text": "recibir una oferta de entrega (push, o el polling propio de la app), aceptar o rechazar contra una cuenta regresiva en vivo." },
+              { "label": "Entrega activa", "text": "marcar una entrega recogida como \"en tránsito\" (esto es lo que activa el mapa del paciente), y luego como \"llegada\" con una foto de prueba y posición GPS." },
+              { "label": "Dashboard web", "text": "de solo lectura — estadísticas de turno (entregas de hoy/completadas, tiempo promedio), historial de entregas, perfil. Ninguna acción aquí depende de la ubicación en vivo, por diseño." }
+            ]
+          },
+          {
+            "role": "Superuser (Admin)",
+            "capabilities": [
+              { "label": "Dashboard web", "text": "de solo lectura por ahora — todos los usuarios de todos los roles con su información básica de perfil, todas las entregas de toda la plataforma, y un historial de entregas por usuario (como el paciente que las recibió, o el repartidor que las hizo)." },
+              { "label": "Todo lo demás", "text": "crear doctores/pacientes, editar catálogos, asignar horarios sigue pasando por el admin de Django (Jazzmin); extender el dashboard del frontend para cubrir eso está en el roadmap." }
+            ]
           }
         ],
         "notifications": {
@@ -183,19 +214,22 @@
             { "trigger": "Visita virtual iniciada", "when": "El doctor marca una cita virtual como In Progress", "attachment": "Enlace de reunión" },
             { "trigger": "Orden de farmacia lista para recoger", "when": "Se paga una orden con modalidad de recogida", "attachment": "Código QR de recogida, PDF de factura" },
             { "trigger": "Orden de farmacia enviada", "when": "Se paga una orden con modalidad de entrega", "attachment": "PDF de factura, enlace de seguimiento" },
-            { "trigger": "Entrega completada", "when": "El propio seguimiento del paciente detecta la etapa final", "attachment": "—" }
+            { "trigger": "Entrega completada", "when": "El repartidor marca una entrega como \"llegada\"", "attachment": "—" }
           ],
           "note": "Actualmente no existe un correo de bienvenida al registrarse ni uno de \"resultados de laboratorio listos\" — ambos son adiciones naturales, aún no construidas."
         },
         "limitations": [
-          "El seguimiento de entregas es simulado, no real. No hay integración con transportadora, webhook ni geolocalización en ninguna parte del código. MedicineDelivery.stage se calcula en cada consulta a partir del tiempo transcurrido desde que se pagó la orden — 5 etapas fijas, 30 segundos cada una, unos 2 minutos de punta a punta — no a partir de ningún evento real. El correo de \"entrega completada\" solo se envía la siguiente vez que el propio cliente del paciente consulta el endpoint de seguimiento después de alcanzar la etapa final; no hay un worker en segundo plano que garantice que se dispare si el paciente nunca vuelve a abrir esa pantalla. El siguiente paso real aquí sería un webhook de transportadora (o, como mínimo, una tarea programada en vez de polling disparado por el cliente) — construir eso de verdad, en vez de la simulación actual, está en el roadmap.",
           "La disponibilidad del doctor todavía no tiene API de autoservicio. El horario semanal de un doctor (DoctorSchedule) por ahora solo puede crearse o editarse desde el admin de Django — no existe un endpoint de \"gestionar mi disponibilidad\" en el propio dashboard del doctor.",
-          "La mensajería segura necesita una instancia de Medplum corriendo para poder enviar mensajes de verdad. MEDPLUM_ENABLED=False (el valor por defecto) desactiva la función de forma limpia — reservas, pagos e historiales clínicos se comportan igual en ambos casos — pero con la función activada, una caída de Medplum sí se manifiesta como un 503 específicamente en los endpoints de mensajería."
+          "La mensajería segura necesita una instancia de Medplum corriendo para poder enviar mensajes de verdad. MEDPLUM_ENABLED=False (el valor por defecto) desactiva la función de forma limpia — reservas, pagos e historiales clínicos se comportan igual en ambos casos — pero con la función activada, una caída de Medplum sí se manifiesta como un 503 específicamente en los endpoints de mensajería.",
+          "La app del repartidor todavía no está vinculada a un proyecto de EAS, así que las notificaciones push para las ofertas de entrega no están activas — el propio polling de la app cada 5 segundos es el respaldo y la mantiene completamente usable mientras tanto.",
+          "El dashboard de administración es de solo lectura. Crear doctores/pacientes, editar el catálogo y asignar horarios todavía requiere el admin de Django (Jazzmin) — el dashboard del frontend por ahora solo lista usuarios y entregas."
         ],
         "roadmap": [
           "Sincronización estructurada de recursos FHIR, extendiendo la integración de Medplum más allá de la mensajería — reflejar citas, prescripciones y órdenes de laboratorio como recursos FHIR (Encounter, MedicationRequest, ServiceRequest) vía un outbox de escritura diferida, manteniendo a Postgres como fuente de verdad en todo momento.",
-          "Una implementación real de seguimiento de entregas, reemplazando la simulación actual basada en tiempo — probablemente un webhook de transportadora (o, como mínimo, una tarea programada en segundo plano) que impulse MedicineDelivery.stage a partir de eventos reales en vez de tiempo transcurrido en cada lectura.",
-          "Un endpoint de gestión de horario para el doctor, para que la disponibilidad semanal ya no dependa del admin de Django."
+          "Un endpoint de gestión de horario para el doctor, para que la disponibilidad semanal ya no dependa del admin de Django.",
+          "EAS build/submit para la app del repartidor, para que sea una app instalable de verdad con notificaciones push funcionando, en vez de correr por Expo Go con un respaldo de polling.",
+          "CRUD completo desde el dashboard de administración — crear doctores y pacientes, editar el catálogo, asignar horarios — actualmente todavía exclusivo del admin de Django.",
+          "Un modelo de pago/liquidación para doctores — cómo se les paga a los propios doctores por las citas completadas — diseñado pero todavía no construido."
         ],
         "gettingStarted": {
           "prerequisites": [
@@ -207,8 +241,11 @@
             "Una instancia de Medplum para mensajería segura — opcional en local, la función se desactiva de forma limpia con MEDPLUM_ENABLED=False",
             "PostgreSQL (opcional en local — si DATABASE_URL no está definida, cae a SQLite)"
           ],
-          "stepTitles": { "backend": "Backend", "frontend": "Frontend" },
-          "stepNotes": { "backend": "La API queda disponible en http://127.0.0.1:8000/api/, el admin en http://127.0.0.1:8000/admin/." },
+          "stepTitles": { "backend": "Backend", "frontend": "Frontend", "mobile": "Móvil (app del repartidor)" },
+          "stepNotes": {
+            "backend": "La API queda disponible en http://127.0.0.1:8000/api/, el admin en http://127.0.0.1:8000/admin/.",
+            "mobile": "Solo es necesario para correr el lado nativo del rol de repartidor — la app web funciona completa sin esto. Ábrela en Expo Go en un dispositivo físico — la ubicación en segundo plano y la cámara no funcionan de forma confiable en un simulador/emulador."
+          },
           "closingNote": "El frontend queda disponible en http://localhost:3000. Corre backend y frontend en dos terminales — el frontend depende de la API para todo (autenticación, citas, pagos, etc.)."
         }
       },

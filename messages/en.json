@@ -44,7 +44,8 @@
         "Atomic consultation flow — diagnosis, prescriptions and lab orders are created together or not at all",
         "Invoices, prescriptions and lab orders generated as real PDF documents with ReportLab",
         "QR pickup codes, self-hosted transactional email via Postal, and full English/Spanish support",
-        "Secure patient-doctor messaging on Medplum (self-hosted, FHIR-native), with a thread lifecycle tied to clinical follow-up need rather than a fixed calendar"
+        "Secure patient-doctor messaging on Medplum (self-hosted, FHIR-native), with a thread lifecycle tied to clinical follow-up need rather than a fixed calendar",
+        "Real GPS delivery tracking: a courier role with a companion Expo/React Native app, proximity-ranked assignment with an offer/decline cascade, a live map for the patient, and photo + GPS proof of delivery — no Celery/cron anywhere, every step driven by a real event"
       ],
       "docs": {
         "problemLong": "Booking a doctor, getting a prescription filled, and paying for care are usually three disconnected experiences for a patient — a phone call to schedule, a paper slip for the pharmacy, a separate portal (or none at all) to see the bill. CHOHEALTH is built to unify that flow into a single product: a patient books an appointment, the doctor produces a medical record and prescription during the visit, the patient fills it through an integrated pharmacy with delivery tracking, and every one of those steps generates a consistent, auditable invoice — all in one authenticated session, in the patient's own language. The engineering goal behind the project was not to build another CRUD demo, but to practice the parts of healthcare software that are unforgiving of shortcuts: preventing a double-booked doctor, keeping a financial ledger that cannot silently drift from reality, reconciling two different payment gateways against the same billing model, and enforcing who is allowed to see or do what. This is an active portfolio project, not a finished product.",
@@ -61,7 +62,10 @@
           { "title": "Postal (self-hosted mailer) for transactional email over SMTP", "rationale": "Owns the full delivery pipeline (SPF/DKIM, bounce handling, a real MTA) without depending on a third-party API's free-tier limits, on the same self-hosted infrastructure as the rest of the platform." },
           { "title": "Medplum (self-hosted, FHIR-native, github.com/medplum/medplum) for secure patient-doctor messaging, with Postgres holding only metadata", "rationale": "Message content and attachments are PHI and belong in a system built around FHIR's encryption, access-control and interoperability standards, not bolted onto the app's own database. Postgres (MessageThread/ThreadMessage) never stores a message body or file — only participants, timestamps and read state — so the inbox can list and sort without a Medplum round trip. Credit to the Medplum team and its open-source community: this integration deliberately leans on their standards-compliant server instead of reinventing encrypted messaging from scratch." },
           { "title": "Native fetch wrapper (src/lib/api.ts) instead of a heavier HTTP client on the frontend", "rationale": "One place to attach the JWT bearer token, the Accept-Language header, and multipart handling — no extra runtime dependency for what is a thin, predictable API layer." },
-          { "title": "Next.js App Router with two role-scoped route trees (/dashboard/doctor, /dashboard/patient)", "rationale": "File-system routing maps directly onto the two very different user journeys, and each dashboard tree ships only the components its role needs." }
+          { "title": "Next.js App Router with role-scoped route trees (/dashboard/doctor, /dashboard/patient, /dashboard/delivery, /dashboard/admin)", "rationale": "File-system routing maps directly onto each very different user journey, and each dashboard tree ships only the components its role needs." },
+          { "title": "A separate Expo (React Native) app for the courier role, instead of a browser tab", "rationale": "Background GPS tracking with the app backgrounded or the phone locked is unreliable-to-impossible from a browser's Geolocation API, but is a first-class native capability (expo-location background tasks). The courier's web dashboard is intentionally read-only (history, stats, profile) — every action that depends on live location happens only in the native app." },
+          { "title": "Delivery assignment and offer expiry driven entirely by real events (a payment succeeding, a courier declining, a delivery completing), not a scheduled worker", "rationale": "Consistent with the rest of the codebase (the secure-messaging circuit breaker, the billing webhook) — this project deliberately has no Celery/cron anywhere. An expired offer is detected lazily, the next time anything reads or acts on it, rather than by a background task racing the clock." },
+          { "title": "A patient-confirmed map pin (search + drag, like a food-delivery app's address picker) instead of geocoding free-text address input after the fact", "rationale": "Free-text geocoding against a service like Nominatim can silently resolve to the wrong precision — a whole neighbourhood instead of a building — with no visible signal that it happened. Capturing the coordinate the patient actually confirmed on a map is strictly more reliable than trying to recover it from text later, and is what the geofence and the courier's live map are built on." }
         ],
         "businessRulesIntro": "The rules below are enforced in code (model constraints, clean() validators, or permission classes), not just described in documentation — each one maps to a specific safeguard in the codebase.",
         "businessRules": [
@@ -96,6 +100,16 @@
             ]
           },
           {
+            "category": "Delivery",
+            "rules": [
+              "A courier's shift status (off_duty / on_duty / on_break) gates whether the assignment algorithm considers them a candidate at all — an off-duty or on-break courier is never offered a delivery.",
+              "A courier cannot start a break, or clock out, while a delivery is actively assigned to them (any stage before delivered). One delivery at a time, start to finish, before the next shift-state change is allowed.",
+              "A delivery offer expires 45 seconds after it's made if the courier doesn't respond; a decline or an expiry both cascade to the next-closest available courier, never back to someone who already saw that same delivery.",
+              "The \"arrived\" geofence check is a soft warning, not a hard block — it still marks the delivery delivered either way. A GPS fix (courier or geocoder) can be off by enough to produce a false negative, and a courier who is genuinely there shouldn't be stuck unable to close out a delivery.",
+              "Proof of delivery requires both a photo and the courier's GPS position at that exact moment — neither alone is accepted."
+            ]
+          },
+          {
             "category": "Reviews",
             "rules": [
               "A review can only be submitted for an appointment with status Completed, and only by the patient who owns that appointment; that same patient can later edit or delete it, and only one review exists per appointment.",
@@ -116,7 +130,7 @@
             "category": "Identity and access",
             "rules": [
               "Authentication is by email, not username; usernames are derived automatically and de-duplicated with a numeric suffix.",
-              "A user's role (Patient / Doctor / Superuser) is necessary but not sufficient for authorization — access also requires the matching profile object to exist.",
+              "A user's role (Patient / Doctor / Delivery / Superuser) is necessary but not sufficient for authorization — access also requires the matching profile object to exist (a Superuser is the one exception, gated on Django's own is_superuser flag instead of a profile).",
               "Access tokens expire after 30 minutes; refresh tokens after 7 days, with rotation enabled so a captured refresh token can be used only once before it is invalidated."
             ]
           },
@@ -151,7 +165,7 @@
               { "label": "Clinical history", "text": "read-only access to own medical records, prescriptions, and lab orders/results; download prescription and lab-order PDFs on demand." },
               { "label": "Pharmacy", "text": "browse the over-the-counter medication catalog (public), buy medications — over-the-counter or prescribed — through a cart supporting pickup or delivery, or bundle every pending prescribed medication into one dedicated delivery request." },
               { "label": "Lab tests", "text": "browse the public lab catalog (flagged with a \"free for you\" badge when an unclaimed matching prescription exists), book a lab directly when it doesn't require a prescription, or for free against one that does." },
-              { "label": "Delivery tracking", "text": "list every delivery-mode order and poll a live per-order tracker (see Known limitations for how \"live\" is implemented)." },
+              { "label": "Delivery tracking", "text": "list every delivery-mode order and poll a live per-order tracker — a plain-text stepper until the courier starts transit, then a live map with the courier's position and the confirmed delivery pin." },
               { "label": "Payments", "text": "Stripe/PayPal checkout, manage saved cards, personal payment history and totals." },
               { "label": "Reviews", "text": "rate and comment on any doctor from a completed appointment (one per appointment, editable), and separately browse a public feed of every review across every doctor, or one doctor's reviews specifically — not limited to the patient's own submissions." },
               { "label": "Secure messaging", "text": "message the doctor from a confirmed (or recently completed) appointment's thread, see unread counts, and send image/PDF attachments, built on Medplum." },
@@ -171,6 +185,23 @@
               { "label": "Secure messaging", "text": "same thread view from the doctor's side, plus the ability to end a conversation manually before its grace period would otherwise expire." },
               { "label": "Notifications", "text": "list, filter, mark as read, delete." }
             ]
+          },
+          {
+            "role": "Delivery (courier)",
+            "capabilities": [
+              { "label": "Account", "text": "register, log in — the Expo app only (the web login rejects a non-courier account and vice versa)." },
+              { "label": "Shift", "text": "clock in/out, start/end a break — blocked while a delivery is actively assigned." },
+              { "label": "Offers", "text": "receive a delivery offer (push, or the app's own poll), accept or decline against a live countdown." },
+              { "label": "Active delivery", "text": "mark a picked-up delivery \"in transit\" (this is what makes the patient's map go live), then \"arrived\" with a proof photo and GPS position." },
+              { "label": "Web dashboard", "text": "read-only — shift stats (today's/completed deliveries, average time), delivery history, profile. No action here depends on live location, by design." }
+            ]
+          },
+          {
+            "role": "Superuser (Admin)",
+            "capabilities": [
+              { "label": "Web dashboard", "text": "read-only for now — every user across every role with their basic profile info, every delivery platform-wide, and a per-user delivery history (as the patient who received them, or the courier who ran them)." },
+              { "label": "Everything else", "text": "creating doctors/patients, editing catalogs, assigning schedules still goes through the Django admin (Jazzmin); extending the frontend dashboard to cover that is on the roadmap." }
+            ]
           }
         ],
         "notifications": {
@@ -183,19 +214,22 @@
             { "trigger": "Virtual visit started", "when": "Doctor marks a virtual appointment In Progress", "attachment": "Meeting link" },
             { "trigger": "Pharmacy order ready for pickup", "when": "A pickup-method order is paid", "attachment": "QR pickup code, invoice PDF" },
             { "trigger": "Pharmacy order shipped", "when": "A delivery-method order is paid", "attachment": "Invoice PDF, tracking link" },
-            { "trigger": "Delivery completed", "when": "The patient's own tracking poll detects the final stage", "attachment": "—" }
+            { "trigger": "Delivery completed", "when": "The courier marks a delivery \"arrived\"", "attachment": "—" }
           ],
           "note": "There is currently no welcome email on signup and no \"lab results ready\" email — both are natural additions, not yet built."
         },
         "limitations": [
-          "Delivery tracking is simulated, not real. There is no courier integration, webhook, or geolocation anywhere in the codebase. MedicineDelivery.stage is computed on every poll from elapsed time since the order was paid — 5 fixed stages, 30 seconds each, about 2 minutes end to end — not from any real-world event. The \"delivery completed\" email is only sent the next time the patient's own client polls the tracking endpoint after the final stage is reached; there is no background worker guaranteeing it fires if the patient never reopens that screen. The next real step here would be a courier webhook (or at minimum a scheduled task instead of client-triggered polling) — genuinely building that out, rather than the current simulation, is on the roadmap.",
           "Doctor availability has no self-service API yet. A doctor's weekly schedule (DoctorSchedule) can currently only be created or edited through the Django admin — there is no \"manage my availability\" endpoint on the doctor's own dashboard.",
-          "Secure messaging requires a running Medplum instance to actually send messages. MEDPLUM_ENABLED=False (the default) disables the feature cleanly — booking, payments, and clinical records behave identically either way — but with it enabled, a Medplum outage does surface as a 503 on the messaging endpoints specifically."
+          "Secure messaging requires a running Medplum instance to actually send messages. MEDPLUM_ENABLED=False (the default) disables the feature cleanly — booking, payments, and clinical records behave identically either way — but with it enabled, a Medplum outage does surface as a 503 on the messaging endpoints specifically.",
+          "The courier app isn't linked to an EAS project yet, so push notifications for delivery offers aren't live — the app's own 5-second poll is the fallback path and keeps it fully usable in the meantime.",
+          "The admin dashboard is read-only. Creating doctors/patients, editing the catalog, and assigning schedules still requires the Django admin (Jazzmin) — the frontend dashboard currently only lists users and deliveries."
         ],
         "roadmap": [
           "Structured FHIR resource sync, extending the Medplum integration beyond messaging — mirroring appointments, prescriptions and lab orders as FHIR resources (Encounter, MedicationRequest, ServiceRequest) via a write-through outbox, with Postgres remaining the source of truth throughout.",
-          "A real delivery-tracking implementation, replacing the current time-based simulation — likely a courier webhook (or, at minimum, a scheduled background task) driving MedicineDelivery.stage off real events instead of elapsed time on read.",
-          "A doctor-facing schedule management endpoint, so weekly availability no longer requires the Django admin."
+          "A doctor-facing schedule management endpoint, so weekly availability no longer requires the Django admin.",
+          "EAS build/submit for the courier app, so it's a real installable app with working push notifications instead of running through Expo Go with a polling fallback.",
+          "Full CRUD from the admin dashboard — creating doctors and patients, editing the catalog, assigning schedules — currently still Django-admin-only.",
+          "A doctor payment/payout model — how doctors themselves get paid for completed appointments — designed but not yet built."
         ],
         "gettingStarted": {
           "prerequisites": [
@@ -207,8 +241,11 @@
             "A Medplum instance for secure messaging — optional locally, the feature degrades cleanly when MEDPLUM_ENABLED=False",
             "PostgreSQL (optional locally — falls back to SQLite if DATABASE_URL is unset)"
           ],
-          "stepTitles": { "backend": "Backend", "frontend": "Frontend" },
-          "stepNotes": { "backend": "API available at http://127.0.0.1:8000/api/, admin at http://127.0.0.1:8000/admin/." },
+          "stepTitles": { "backend": "Backend", "frontend": "Frontend", "mobile": "Mobile (courier app)" },
+          "stepNotes": {
+            "backend": "API available at http://127.0.0.1:8000/api/, admin at http://127.0.0.1:8000/admin/.",
+            "mobile": "Only needed to run the delivery role's native side — the web app runs fully without this. Open in Expo Go on a physical device — background location and camera don't work reliably in a simulator/emulator."
+          },
           "closingNote": "Frontend available at http://localhost:3000. Run backend and frontend in two terminals — the frontend depends on the API for everything (authentication, appointments, payments, and so on)."
         }
       },
