@@ -499,7 +499,7 @@ npm run db:seed             # loads a sample workspace (optional)`,
     accentText: "#1d4ed8",
     pillBg: "#1d4ed80f",
     pillBorder: "#1d4ed82a",
-    techStack: ["Django", "Next.js", "PostgreSQL", "Stripe", "Medplum", "Expo", "Docker"],
+    techStack: ["Django", "Next.js", "PostgreSQL", "Stripe", "Medplum", "Jitsi", "Expo", "Docker"],
     hasProblem: true,
     hasStats: true,
     demoAccounts: {
@@ -524,6 +524,7 @@ npm run db:seed             # loads a sample workspace (optional)`,
         { layer: "Database", tech: "PostgreSQL (production, via dj-database-url), SQLite (local fallback)" },
         { layer: "Media storage", tech: "MinIO (S3-compatible, self-hosted)" },
         { layer: "Secure messaging", tech: "Medplum (self-hosted, FHIR-native)" },
+        { layer: "Video consultations", tech: "Jitsi Meet (self-hosted, JWT-secured)" },
         { layer: "Static files", tech: "Whitenoise" },
         { layer: "Admin UI", tech: "Django Jazzmin" },
         { layer: "Payments", tech: "Stripe (Checkout, Setup Intents, webhooks), PayPal (Orders API)" },
@@ -559,6 +560,7 @@ npm run db:seed             # loads a sample workspace (optional)`,
     POSTAL[["Postal<br/>self-hosted SMTP"]]
     MEDPLUM[("Medplum<br/>self-hosted FHIR server<br/>Communication / Binary resources")]
     NOMINATIM[["Nominatim (OpenStreetMap)<br/>address search / geocoding"]]
+    JITSI[("Jitsi Meet<br/>self-hosted video, JWT-secured")]
 
     FE -->|"REST, JWT bearer token"| AUTH
     FE --> DOC
@@ -567,6 +569,7 @@ npm run db:seed             # loads a sample workspace (optional)`,
     FE --> BILL
     FE --> ADMIN
     FE -->|"search / reverse geocode<br/>(browser, address picker)"| NOMINATIM
+    FE -->|"join room with a signed,<br/>per-participant JWT"| JITSI
     MOBILE -->|"REST, JWT bearer token"| AUTH
     MOBILE --> DELIV
     MOBILE -->|"start-transit / arrived"| BASE
@@ -877,7 +880,14 @@ DEFAULT_FROM_EMAIL=
 MEDPLUM_ENABLED=False           # set True once a Medplum instance is reachable
 MEDPLUM_BASE_URL=
 MEDPLUM_CLIENT_ID=
-MEDPLUM_CLIENT_SECRET=`,
+MEDPLUM_CLIENT_SECRET=
+
+JITSI_BASE_URL=                 # e.g. https://meet.example.com
+JITSI_APP_ID=
+JITSI_APP_SECRET=               # must match your Jitsi deployment's JWT_APP_SECRET
+JITSI_JWT_AUDIENCE=jitsi
+JITSI_JWT_SUB=                  # your Jitsi domain
+JITSI_JWT_TTL_MINUTES=120`,
           },
           {
             key: "frontend",
